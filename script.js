@@ -456,7 +456,7 @@ export const textNodes = [
 
         action: "link", // This tells the button what type of action to perform
 
-        linkUrl: "https://www.linkedin.com/in/ademiralijagic" // replace with actual LinkedIn URL
+        linkUrl: "https://www.linkedin.com/in/christinapaigemeador" // replace with actual LinkedIn URL
       },
 
       {
