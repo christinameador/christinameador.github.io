@@ -360,7 +360,7 @@
     </div>
 
     <!-- Level Up Modal -->
-    <div id="level-up-modal" class="modal">
+    <div id="level-up-modal" class="modal" onclick="if(event.target === this) closeLevelUpModal()">
         <div class="modal-content level-up">
             <h2>🎉 Level Up!</h2>
             <div id="level-up-text"></div>
@@ -369,7 +369,7 @@
     </div>
 
     <!-- Achievement Unlocked Modal -->
-    <div id="achievement-modal" class="modal">
+    <div id="achievement-modal" class="modal" onclick="if(event.target === this) closeAchievementModal()">
         <div class="modal-content achievement-unlock">
             <h2>🏆 Achievement Unlocked!</h2>
             <div id="achievement-text"></div>
@@ -378,7 +378,7 @@
     </div>
 
     <!-- Add Custom Quest Modal -->
-    <div id="add-quest-modal" class="modal">
+    <div id="add-quest-modal" class="modal" onclick="if(event.target === this) closeAddQuestModal()">
         <div class="modal-content">
             <h2>Add Custom Quest</h2>
             <form id="custom-quest-form">
@@ -444,7 +444,7 @@
     </div>
 
     <!-- Edit Quest Modal -->
-    <div id="edit-quest-modal" class="modal">
+    <div id="edit-quest-modal" class="modal" onclick="if(event.target === this) closeEditQuestModal()">
         <div class="modal-content">
             <h2>Edit Quest</h2>
             <form id="edit-quest-form">
@@ -510,7 +510,7 @@
     </div>
 
     <!-- Add Collection Log Modal -->
-    <div id="add-log-modal" class="modal">
+    <div id="add-log-modal" class="modal" onclick="if(event.target === this) closeAddLogModal()">
         <div class="modal-content">
             <h2>Add to Collection Log</h2>
             <form id="collection-log-form">
@@ -539,13 +539,13 @@
     </div>
 
     <!-- Complete Collection Log Modal -->
-    <div id="complete-log-modal" class="modal">
+    <div id="complete-log-modal" class="modal" onclick="if(event.target === this) closeCompleteLogModal()">
         <div class="modal-content">
             <h2 id="complete-log-title">Complete Experience</h2>
             <p style="color: var(--osrs-tan); margin-bottom: 1rem;">Add a photo to complete this collection log entry!</p>
             
             <div class="form-group">
-                <input type="file" id="log-photo-input" accept="image/*" capture="environment" style="display: none;">
+                <input type="file" id="log-photo-input" accept="image/*" style="display: none;">
                 <button type="button" class="primary-btn" onclick="document.getElementById('log-photo-input').click()">
                     📷 Take/Upload Photo
                 </button>
@@ -560,7 +560,7 @@
     </div>
 
     <!-- Skill Detail Modal -->
-    <div id="skill-detail-modal" class="modal">
+    <div id="skill-detail-modal" class="modal" onclick="if(event.target === this) closeSkillDetailModal()">
         <div class="modal-content" style="max-width: 600px;">
             <h2 id="skill-detail-title">💪 Strength</h2>
             

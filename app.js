@@ -68,20 +68,21 @@ class LifeRPG {
             // Daily Quests
             { id: 'run', name: 'Go for a run', xp: 50, skill: 'strength', type: 'daily', tags: ['fitness-goddess'] },
             { id: 'workout', name: 'Strength training', xp: 50, skill: 'strength', type: 'daily', tags: ['fitness-goddess'] },
-            { id: 'yoga', name: 'Yoga/Stretching', xp: 30, skill: 'wisdom', type: 'daily', tags: ['fitness-goddess'] },
+            { id: 'yoga', name: 'Yoga/Stretching', xp: 30, skill: 'wisdom', type: 'daily', tags: ['fitness-goddess', 'soul-work'] },
             { id: 'cross_stitch', name: 'Cross stitch (30+ min)', xp: 30, skill: 'creativity', type: 'daily', tags: ['artistic-visionary'] },
             { id: 'cook_meal', name: 'Cook a meal', xp: 35, skill: 'strength', type: 'daily', tags: ['culinary-master'] },
-            { id: 'dev_work', name: 'Moonshot Dev work (1+ hr)', xp: 50, skill: 'intelligence', type: 'daily', tags: ['business-path'] },
-            { id: 'quality_time', name: 'Quality time with Scott', xp: 30, skill: 'charisma', type: 'daily', tags: [] },
-            { id: 'phone_free', name: 'Phone-free hour', xp: 25, skill: 'wisdom', type: 'daily', tags: [] },
-            { id: 'read', name: 'Read (30+ min)', xp: 30, skill: 'intelligence', type: 'daily', tags: [] },
+            { id: 'dev_work', name: 'Moonshot Dev work (1+ hr)', xp: 50, skill: 'intelligence', type: 'daily', tags: ['entrepreneurship'] },
+            { id: 'quality_time', name: 'Quality time with Scott', xp: 30, skill: 'charisma', type: 'daily', tags: ['lover-girl'] },
+            { id: 'phone_free', name: 'Phone-free hour', xp: 25, skill: 'wisdom', type: 'daily', tags: ['soul-work'] },
+            { id: 'read', name: 'Read (30+ min)', xp: 30, skill: 'intelligence', type: 'daily', tags: ['soul-work'] },
+            { id: 'journal', name: 'Journal (15+ min)', xp: 25, skill: 'wisdom', type: 'daily', tags: ['soul-work'] },
 
             // Weekly Quests
             { id: 'run_5k', name: 'Complete a 5K run', xp: 150, skill: 'strength', type: 'weekly', tags: ['fitness-goddess'] },
-            { id: 'date_night', name: 'Date night with Scott', xp: 75, skill: 'charisma', type: 'weekly', tags: [] },
+            { id: 'date_night', name: 'Date night with Scott', xp: 75, skill: 'charisma', type: 'weekly', tags: ['lover-girl'] },
             { id: 'reno_task', name: 'Home renovation task', xp: 60, skill: 'constitution', type: 'weekly', tags: [] },
             { id: 'meal_prep', name: 'Meal prep for the week', xp: 50, skill: 'constitution', type: 'weekly', tags: ['culinary-master'] },
-            { id: 'social', name: 'Hang with friends', xp: 60, skill: 'charisma', type: 'weekly', tags: [] },
+            { id: 'social', name: 'Hang with friends', xp: 60, skill: 'charisma', type: 'weekly', tags: ['lover-girl'] },
             { id: 'content_create', name: 'Create content for social media', xp: 60, skill: 'creativity', type: 'weekly', tags: ['lifestyle-influencer'] },
 
             // Monthly Quests
@@ -89,23 +90,23 @@ class LifeRPG {
             { id: 'art_project', name: 'Complete a major art project', xp: 150, skill: 'creativity', type: 'monthly', tags: ['artistic-visionary'] },
             { id: 'fitness_milestone', name: 'Hit a fitness milestone', xp: 150, skill: 'strength', type: 'monthly', tags: ['fitness-goddess'] },
 
-            // Business Path - As-Needed Quests
-            { id: 'biz_research', name: 'Market research for plugin ideas', xp: 40, skill: 'intelligence', type: 'as-needed', tags: ['business-path'] },
-            { id: 'biz_design', name: 'Design business website mockup', xp: 50, skill: 'creativity', type: 'as-needed', tags: ['business-path'] },
-            { id: 'biz_brand', name: 'Create brand assets (logo, colors)', xp: 60, skill: 'creativity', type: 'as-needed', tags: ['business-path'] },
-            { id: 'biz_website_dev', name: 'Build Moonshot Dev website', xp: 100, skill: 'intelligence', type: 'as-needed', tags: ['business-path'] },
-            { id: 'biz_plugin_plan', name: 'Plan first plugin features', xp: 50, skill: 'intelligence', type: 'as-needed', tags: ['business-path'] },
-            { id: 'biz_plugin_dev', name: 'Develop plugin core functionality', xp: 150, skill: 'intelligence', type: 'as-needed', tags: ['business-path'] },
-            { id: 'biz_plugin_polish', name: 'Polish plugin UI/UX', xp: 75, skill: 'creativity', type: 'as-needed', tags: ['business-path'] },
-            { id: 'biz_docs', name: 'Write plugin documentation', xp: 60, skill: 'constitution', type: 'as-needed', tags: ['business-path'] },
-            { id: 'biz_marketing_plan', name: 'Create marketing strategy', xp: 50, skill: 'intelligence', type: 'as-needed', tags: ['business-path'] },
-            { id: 'biz_social', name: 'Build social media presence', xp: 40, skill: 'charisma', type: 'as-needed', tags: ['business-path', 'lifestyle-influencer'] },
-            { id: 'biz_launch_prep', name: 'Prepare for launch', xp: 75, skill: 'constitution', type: 'as-needed', tags: ['business-path'] },
+            // Entrepreneurship Path - As-Needed Quests
+            { id: 'biz_research', name: 'Market research for plugin ideas', xp: 40, skill: 'intelligence', type: 'as-needed', tags: ['entrepreneurship'] },
+            { id: 'biz_design', name: 'Design business website mockup', xp: 50, skill: 'creativity', type: 'as-needed', tags: ['entrepreneurship'] },
+            { id: 'biz_brand', name: 'Create brand assets (logo, colors)', xp: 60, skill: 'creativity', type: 'as-needed', tags: ['entrepreneurship'] },
+            { id: 'biz_website_dev', name: 'Build Moonshot Dev website', xp: 100, skill: 'intelligence', type: 'as-needed', tags: ['entrepreneurship'] },
+            { id: 'biz_plugin_plan', name: 'Plan first plugin features', xp: 50, skill: 'intelligence', type: 'as-needed', tags: ['entrepreneurship'] },
+            { id: 'biz_plugin_dev', name: 'Develop plugin core functionality', xp: 150, skill: 'intelligence', type: 'as-needed', tags: ['entrepreneurship'] },
+            { id: 'biz_plugin_polish', name: 'Polish plugin UI/UX', xp: 75, skill: 'creativity', type: 'as-needed', tags: ['entrepreneurship'] },
+            { id: 'biz_docs', name: 'Write plugin documentation', xp: 60, skill: 'constitution', type: 'as-needed', tags: ['entrepreneurship'] },
+            { id: 'biz_marketing_plan', name: 'Create marketing strategy', xp: 50, skill: 'intelligence', type: 'as-needed', tags: ['entrepreneurship'] },
+            { id: 'biz_social', name: 'Build social media presence', xp: 40, skill: 'charisma', type: 'as-needed', tags: ['entrepreneurship', 'lifestyle-influencer'] },
+            { id: 'biz_launch_prep', name: 'Prepare for launch', xp: 75, skill: 'constitution', type: 'as-needed', tags: ['entrepreneurship'] },
 
             // Culinary Master Path
             { id: 'culinary_experiment', name: 'Try a new cooking technique', xp: 45, skill: 'creativity', type: 'as-needed', tags: ['culinary-master'] },
             { id: 'culinary_plate', name: 'Focus on plating/presentation', xp: 30, skill: 'creativity', type: 'as-needed', tags: ['culinary-master'] },
-            { id: 'culinary_themed', name: 'Plan themed dinner night', xp: 50, skill: 'intelligence', type: 'as-needed', tags: ['culinary-master'] },
+            { id: 'culinary_themed', name: 'Plan themed dinner night', xp: 50, skill: 'intelligence', type: 'as-needed', tags: ['culinary-master', 'lover-girl'] },
 
             // Artistic Visionary Path
             { id: 'art_learn', name: 'Learn a new art technique', xp: 50, skill: 'intelligence', type: 'as-needed', tags: ['artistic-visionary'] },
@@ -119,7 +120,19 @@ class LifeRPG {
             // Fitness Goddess Path
             { id: 'fitness_cardio', name: 'Cardio session (30+ min)', xp: 40, skill: 'strength', type: 'as-needed', tags: ['fitness-goddess'] },
             { id: 'fitness_new_class', name: 'Try a new fitness class', xp: 50, skill: 'strength', type: 'as-needed', tags: ['fitness-goddess'] },
-            { id: 'fitness_rest', name: 'Active recovery day', xp: 30, skill: 'wisdom', type: 'as-needed', tags: ['fitness-goddess'] }
+            { id: 'fitness_rest', name: 'Active recovery day', xp: 30, skill: 'wisdom', type: 'as-needed', tags: ['fitness-goddess'] },
+
+            // Lover Girl Path
+            { id: 'lover_call', name: 'Call/FaceTime with a friend', xp: 25, skill: 'charisma', type: 'as-needed', tags: ['lover-girl'] },
+            { id: 'lover_letter', name: 'Write a thoughtful message/card', xp: 30, skill: 'charisma', type: 'as-needed', tags: ['lover-girl'] },
+            { id: 'lover_plan', name: 'Plan something special for Scott', xp: 35, skill: 'intelligence', type: 'as-needed', tags: ['lover-girl'] },
+            { id: 'lover_surprise', name: 'Surprise someone you love', xp: 40, skill: 'charisma', type: 'as-needed', tags: ['lover-girl'] },
+
+            // Soul Work Path
+            { id: 'soul_shadow', name: 'Shadow work session', xp: 50, skill: 'wisdom', type: 'as-needed', tags: ['soul-work'] },
+            { id: 'soul_meditate', name: 'Meditation (20+ min)', xp: 35, skill: 'wisdom', type: 'as-needed', tags: ['soul-work'] },
+            { id: 'soul_reflect', name: 'Deep reflection/self-inquiry', xp: 40, skill: 'wisdom', type: 'as-needed', tags: ['soul-work'] },
+            { id: 'soul_gratitude', name: 'Gratitude practice', xp: 25, skill: 'wisdom', type: 'as-needed', tags: ['soul-work'] }
         ];
     }
 
@@ -588,6 +601,7 @@ class LifeRPG {
         `;
         
         modal.classList.add('active');
+        document.body.classList.add('modal-open');
     }
 
     getSkillEmoji(skill) {
@@ -739,6 +753,7 @@ class LifeRPG {
         
         text.textContent = achievementName;
         modal.classList.add('active');
+        document.body.classList.add('modal-open');
     }
 
     start75Hard() {
@@ -922,6 +937,7 @@ class LifeRPG {
 
     openAddQuestModal() {
         document.getElementById('add-quest-modal').classList.add('active');
+        document.body.classList.add('modal-open');
     }
 
     addCustomQuest() {
@@ -1001,6 +1017,7 @@ class LifeRPG {
 
         // Open modal
         document.getElementById('edit-quest-modal').classList.add('active');
+        document.body.classList.add('modal-open');
     }
 
     saveEditedQuest() {
@@ -1028,6 +1045,7 @@ class LifeRPG {
     // Collection Log Methods
     openAddLogModal() {
         document.getElementById('add-log-modal').classList.add('active');
+        document.body.classList.add('modal-open');
     }
 
     addCollectionLog() {
@@ -1172,6 +1190,7 @@ class LifeRPG {
         document.getElementById('save-log-photo-btn').disabled = true;
         
         document.getElementById('complete-log-modal').classList.add('active');
+        document.body.classList.add('modal-open');
     }
 
     handleLogPhoto(event) {
@@ -1319,39 +1338,47 @@ class LifeRPG {
         }
         
         document.getElementById('skill-detail-modal').classList.add('active');
+        document.body.classList.add('modal-open');
     }
 }
 
 // Close modals
 function closeLevelUpModal() {
     document.getElementById('level-up-modal').classList.remove('active');
+    document.body.classList.remove('modal-open');
 }
 
 function closeAchievementModal() {
     document.getElementById('achievement-modal').classList.remove('active');
+    document.body.classList.remove('modal-open');
 }
 
 function closeAddQuestModal() {
     document.getElementById('add-quest-modal').classList.remove('active');
+    document.body.classList.remove('modal-open');
 }
 
 function closeEditQuestModal() {
     document.getElementById('edit-quest-modal').classList.remove('active');
+    document.body.classList.remove('modal-open');
     app.editingQuestId = null;
 }
 
 function closeAddLogModal() {
     document.getElementById('add-log-modal').classList.remove('active');
+    document.body.classList.remove('modal-open');
 }
 
 function closeCompleteLogModal() {
     document.getElementById('complete-log-modal').classList.remove('active');
+    document.body.classList.remove('modal-open');
     app.currentLogId = null;
     app.currentLogPhoto = null;
 }
 
 function closeSkillDetailModal() {
     document.getElementById('skill-detail-modal').classList.remove('active');
+    document.body.classList.remove('modal-open');
 }
 
 // Initialize app
