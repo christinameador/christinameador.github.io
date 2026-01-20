@@ -1,56 +1,609 @@
 <!DOCTYPE html>
-
 <html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#2b1810">
+    <title>Life RPG - Character Sheet</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="icon" type="image/png" href="icon-192.png">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Navigation -->
+        <nav class="main-nav">
+            <button class="nav-btn active" data-view="character">Character</button>
+            <button class="nav-btn" data-view="quests">Quests</button>
+            <button class="nav-btn" data-view="paths">Paths</button>
+            <button class="nav-btn" data-view="achievements">Achievements</button>
+            <button class="nav-btn" data-view="challenges">Challenges</button>
+        </nav>
 
-  <head>
+        <!-- Character Sheet View -->
+        <div id="character-view" class="view active">
+            <div class="character-header">
+                <h1>Christina's Adventure</h1>
+                <div class="total-level">Total Level: <span id="total-level">6</span></div>
+                <div class="daily-progress">Today's XP: <span id="daily-xp">0</span></div>
+                <button class="header-btn" onclick="app.switchView('collection-log')">📸 Collection Log</button>
+            </div>
 
-    <meta charset="UTF-8" />
+            <div class="skills-container">
+                <div class="skill-card" data-skill="strength" onclick="app.openSkillDetail('strength')">
+                    <div class="skill-icon">💪</div>
+                    <div class="skill-info">
+                        <h3>Strength</h3>
+                        <div class="skill-level">Level <span class="level-num">1</span></div>
+                        <div class="xp-bar">
+                            <div class="xp-fill" style="width: 0%"></div>
+                        </div>
+                        <div class="xp-text"><span class="current-xp">0</span> / <span class="next-level-xp">83</span> XP</div>
+                        <div class="streak-info">🔥 <span class="streak-days">0</span> day streak</div>
+                    </div>
+                </div>
 
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+                <div class="skill-card" data-skill="creativity" onclick="app.openSkillDetail('creativity')">
+                    <div class="skill-icon">🎨</div>
+                    <div class="skill-info">
+                        <h3>Creativity</h3>
+                        <div class="skill-level">Level <span class="level-num">1</span></div>
+                        <div class="xp-bar">
+                            <div class="xp-fill" style="width: 0%"></div>
+                        </div>
+                        <div class="xp-text"><span class="current-xp">0</span> / <span class="next-level-xp">83</span> XP</div>
+                        <div class="streak-info">🔥 <span class="streak-days">0</span> day streak</div>
+                    </div>
+                </div>
 
-    <meta property="og:title" content="Christina Meador - Web Developer" />
-    
-    <meta property="og:description" content="Personal Portfolio Website of Christina Meador" />
-    
-    <meta property="og:image" content="https://i.imgur.com/nHw3hG5.png" />
+                <div class="skill-card" data-skill="intelligence" onclick="app.openSkillDetail('intelligence')">
+                    <div class="skill-icon">🧠</div>
+                    <div class="skill-info">
+                        <h3>Intelligence</h3>
+                        <div class="skill-level">Level <span class="level-num">1</span></div>
+                        <div class="xp-bar">
+                            <div class="xp-fill" style="width: 0%"></div>
+                        </div>
+                        <div class="xp-text"><span class="current-xp">0</span> / <span class="next-level-xp">83</span> XP</div>
+                        <div class="streak-info">🔥 <span class="streak-days">0</span> day streak</div>
+                    </div>
+                </div>
 
-    <title>Journey of the Wanderer</title>
+                <div class="skill-card" data-skill="charisma" onclick="app.openSkillDetail('charisma')">
+                    <div class="skill-icon">💬</div>
+                    <div class="skill-info">
+                        <h3>Charisma</h3>
+                        <div class="skill-level">Level <span class="level-num">1</span></div>
+                        <div class="xp-bar">
+                            <div class="xp-fill" style="width: 0%"></div>
+                        </div>
+                        <div class="xp-text"><span class="current-xp">0</span> / <span class="next-level-xp">83</span> XP</div>
+                        <div class="streak-info">🔥 <span class="streak-days">0</span> day streak</div>
+                    </div>
+                </div>
 
-    <link rel="stylesheet" href="style.css" />
+                <div class="skill-card" data-skill="wisdom" onclick="app.openSkillDetail('wisdom')">
+                    <div class="skill-icon">🧘</div>
+                    <div class="skill-info">
+                        <h3>Wisdom</h3>
+                        <div class="skill-level">Level <span class="level-num">1</span></div>
+                        <div class="xp-bar">
+                            <div class="xp-fill" style="width: 0%"></div>
+                        </div>
+                        <div class="xp-text"><span class="current-xp">0</span> / <span class="next-level-xp">83</span> XP</div>
+                        <div class="streak-info">🔥 <span class="streak-days">0</span> day streak</div>
+                    </div>
+                </div>
 
-    <script src="script.js" type="module"></script>
+                <div class="skill-card" data-skill="constitution" onclick="app.openSkillDetail('constitution')">
+                    <div class="skill-icon">📋</div>
+                    <div class="skill-info">
+                        <h3>Constitution</h3>
+                        <div class="skill-level">Level <span class="level-num">1</span></div>
+                        <div class="xp-bar">
+                            <div class="xp-fill" style="width: 0%"></div>
+                        </div>
+                        <div class="xp-text"><span class="current-xp">0</span> / <span class="next-level-xp">83</span> XP</div>
+                        <div class="streak-info">🔥 <span class="streak-days">0</span> day streak</div>
+                    </div>
+                </div>
+            </div>
+        </div>
 
-  </head>
+        <!-- Quests View -->
+        <div id="quests-view" class="view">
+            <div class="view-header">
+                <h2>Quest Log</h2>
+                <button id="add-quest-btn" class="primary-btn">+ Add Custom Quest</button>
+            </div>
 
-  <body>
+            <div class="filter-section">
+                <h3 class="filter-label">Type:</h3>
+                <div class="quest-filters">
+                    <button class="filter-btn active" data-filter-type="all">All</button>
+                    <button class="filter-btn" data-filter-type="daily">Daily</button>
+                    <button class="filter-btn" data-filter-type="weekly">Weekly</button>
+                    <button class="filter-btn" data-filter-type="monthly">Monthly</button>
+                    <button class="filter-btn" data-filter-type="as-needed">As-Needed</button>
+                </div>
+            </div>
 
-    <div id="container">
+            <div class="filter-section">
+                <h3 class="filter-label">Path:</h3>
+                <div class="path-filters">
+                    <button class="filter-btn active" data-filter-path="all">All</button>
+                    <button class="filter-btn" data-filter-path="business-path">🚀 Business Path</button>
+                    <button class="filter-btn" data-filter-path="culinary-master">🍳 Culinary Master</button>
+                    <button class="filter-btn" data-filter-path="artistic-visionary">🎨 Artistic Visionary</button>
+                    <button class="filter-btn" data-filter-path="lifestyle-influencer">📸 Lifestyle Influencer</button>
+                    <button class="filter-btn" data-filter-path="fitness-goddess">💪 Fitness Goddess</button>
+                    <button class="filter-btn" data-filter-path="none">📝 Untagged</button>
+                </div>
+            </div>
 
-      <div id="title"></div>
+            <div id="quests-container" class="quests-list"></div>
+        </div>
 
-      <div id="background"></div>
+        <!-- Paths View -->
+        <div id="paths-view" class="view">
+            <div class="view-header">
+                <h2>Grandmaster Paths</h2>
+                <button id="manage-paths-btn" class="primary-btn">⚙️ Manage Paths</button>
+            </div>
 
-      <div id="story"></div>
+            <div class="paths-container" id="paths-container">
+                <div class="path-card" data-path="business-path">
+                    <div class="path-header">
+                        <div class="path-icon">🚀</div>
+                        <div class="path-info">
+                            <h3 class="path-title">Business Path</h3>
+                            <p class="path-description">Launch Moonshot Dev and make your first sale</p>
+                        </div>
+                    </div>
+                    <div class="path-progress">
+                        <div class="path-stats">
+                            <span class="path-stat"><span class="stat-value" id="business-path-completed">0</span> / <span id="business-path-total">0</span> quests</span>
+                            <span class="path-stat"><span class="stat-value" id="business-path-xp">0</span> XP earned</span>
+                        </div>
+                        <div class="path-bar">
+                            <div class="path-fill" id="business-path-fill" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    <button class="path-btn" onclick="app.filterByPath('business-path')">View Quests →</button>
+                </div>
 
-      <div id="choices"></div>
+                <div class="path-card" data-path="culinary-master">
+                    <div class="path-header">
+                        <div class="path-icon">🍳</div>
+                        <div class="path-info">
+                            <h3 class="path-title">Culinary Master</h3>
+                            <p class="path-description">Master cooking techniques and create memorable meals</p>
+                        </div>
+                    </div>
+                    <div class="path-progress">
+                        <div class="path-stats">
+                            <span class="path-stat"><span class="stat-value" id="culinary-master-completed">0</span> / <span id="culinary-master-total">0</span> quests</span>
+                            <span class="path-stat"><span class="stat-value" id="culinary-master-xp">0</span> XP earned</span>
+                        </div>
+                        <div class="path-bar">
+                            <div class="path-fill" id="culinary-master-fill" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    <button class="path-btn" onclick="app.filterByPath('culinary-master')">View Quests →</button>
+                </div>
 
-      <div id="sound">
+                <div class="path-card" data-path="artistic-visionary">
+                    <div class="path-header">
+                        <div class="path-icon">🎨</div>
+                        <div class="path-info">
+                            <h3 class="path-title">Artistic Visionary</h3>
+                            <p class="path-description">Create and share beautiful art projects</p>
+                        </div>
+                    </div>
+                    <div class="path-progress">
+                        <div class="path-stats">
+                            <span class="path-stat"><span class="stat-value" id="artistic-visionary-completed">0</span> / <span id="artistic-visionary-total">0</span> quests</span>
+                            <span class="path-stat"><span class="stat-value" id="artistic-visionary-xp">0</span> XP earned</span>
+                        </div>
+                        <div class="path-bar">
+                            <div class="path-fill" id="artistic-visionary-fill" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    <button class="path-btn" onclick="app.filterByPath('artistic-visionary')">View Quests →</button>
+                </div>
 
-        <audio id="bgMusic" loop>
+                <div class="path-card" data-path="lifestyle-influencer">
+                    <div class="path-header">
+                        <div class="path-icon">📸</div>
+                        <div class="path-info">
+                            <h3 class="path-title">Lifestyle Influencer</h3>
+                            <p class="path-description">Build your personal brand and engage your community</p>
+                        </div>
+                    </div>
+                    <div class="path-progress">
+                        <div class="path-stats">
+                            <span class="path-stat"><span class="stat-value" id="lifestyle-influencer-completed">0</span> / <span id="lifestyle-influencer-total">0</span> quests</span>
+                            <span class="path-stat"><span class="stat-value" id="lifestyle-influencer-xp">0</span> XP earned</span>
+                        </div>
+                        <div class="path-bar">
+                            <div class="path-fill" id="lifestyle-influencer-fill" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    <button class="path-btn" onclick="app.filterByPath('lifestyle-influencer')">View Quests →</button>
+                </div>
 
-          <source src="/assets/ambient-1.mp3" type="audio/mpeg" />
+                <div class="path-card" data-path="fitness-goddess">
+                    <div class="path-header">
+                        <div class="path-icon">💪</div>
+                        <div class="path-info">
+                            <h3 class="path-title">Fitness Goddess</h3>
+                            <p class="path-description">Build strength, endurance, and overall wellness</p>
+                        </div>
+                    </div>
+                    <div class="path-progress">
+                        <div class="path-stats">
+                            <span class="path-stat"><span class="stat-value" id="fitness-goddess-completed">0</span> / <span id="fitness-goddess-total">0</span> quests</span>
+                            <span class="path-stat"><span class="stat-value" id="fitness-goddess-xp">0</span> XP earned</span>
+                        </div>
+                        <div class="path-bar">
+                            <div class="path-fill" id="fitness-goddess-fill" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    <button class="path-btn" onclick="app.filterByPath('fitness-goddess')">View Quests →</button>
+                </div>
+            </div>
+        </div>
 
-        </audio>
+        <!-- Achievements View -->
+        <div id="achievements-view" class="view">
+            <div class="view-header">
+                <h2>Achievement Diaries</h2>
+            </div>
 
-        <!--<button id="musicToggle"></button>-->
+            <div class="achievement-tiers">
+                <div class="tier-section">
+                    <h3 class="tier-title beginner">🏅 Beginner Tasks</h3>
+                    <div id="beginner-achievements" class="achievements-grid"></div>
+                </div>
 
-      </div>
+                <div class="tier-section">
+                    <h3 class="tier-title medium">🏆 Medium Tasks</h3>
+                    <div id="medium-achievements" class="achievements-grid"></div>
+                </div>
 
+                <div class="tier-section">
+                    <h3 class="tier-title hard">💎 Hard Tasks</h3>
+                    <div id="hard-achievements" class="achievements-grid"></div>
+                </div>
+
+                <div class="tier-section">
+                    <h3 class="tier-title elite">👑 Elite Tasks</h3>
+                    <div id="elite-achievements" class="achievements-grid"></div>
+                </div>
+
+                <div class="tier-section">
+                    <h3 class="tier-title grandmaster">✨ Grandmaster Quest</h3>
+                    <div id="grandmaster-achievements" class="achievements-grid"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Challenges View -->
+        <div id="challenges-view" class="view">
+            <div class="view-header">
+                <h2>Active Challenges</h2>
+                <button id="start-75hard-btn" class="primary-btn">Start 75 Hard</button>
+            </div>
+
+            <div id="active-challenge-container"></div>
+        </div>
+
+        <!-- Collection Log View -->
+        <div id="collection-log-view" class="view">
+            <div class="view-header">
+                <h2>Collection Log</h2>
+                <button id="add-log-btn" class="primary-btn">+ Add Experience</button>
+            </div>
+
+            <div class="collection-stats">
+                <div class="stat-card">
+                    <span class="stat-label">Total Experiences</span>
+                    <span class="stat-value" id="total-logs">0</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-label">Completed</span>
+                    <span class="stat-value" id="completed-logs">0</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-label">Completion Rate</span>
+                    <span class="stat-value" id="completion-rate">0%</span>
+                </div>
+            </div>
+
+            <div class="filter-section">
+                <h3 class="filter-label">Filter:</h3>
+                <div class="collection-filters">
+                    <button class="filter-btn active" data-log-filter="all">All</button>
+                    <button class="filter-btn" data-log-filter="incomplete">To Complete</button>
+                    <button class="filter-btn" data-log-filter="completed">Completed</button>
+                </div>
+            </div>
+
+            <div class="filter-section">
+                <h3 class="filter-label">Tags:</h3>
+                <div class="tag-filters" id="log-tag-filters">
+                    <button class="filter-btn active" data-tag-filter="all">All</button>
+                    <!-- Dynamic tag buttons will be added here -->
+                </div>
+            </div>
+
+            <div id="collection-log-container" class="collection-grid"></div>
+        </div>
+
+        <!-- Photos View -->
+        <div id="photos-view" class="view">
+            <div class="view-header">
+                <h2>Photo Gallery</h2>
+                <button id="add-photo-btn" class="primary-btn">+ Add Photo</button>
+            </div>
+
+            <div class="photo-filters">
+                <button class="filter-btn active" data-category="all">All</button>
+                <button class="filter-btn" data-category="progress">Progress</button>
+                <button class="filter-btn" data-category="project">Projects</button>
+                <button class="filter-btn" data-category="meal">Meals</button>
+                <button class="filter-btn" data-category="achievement">Achievements</button>
+            </div>
+
+            <div id="photos-container" class="photos-grid"></div>
+        </div>
     </div>
 
-  </body>
+    <!-- Level Up Modal -->
+    <div id="level-up-modal" class="modal">
+        <div class="modal-content level-up">
+            <h2>🎉 Level Up!</h2>
+            <div id="level-up-text"></div>
+            <button class="primary-btn" onclick="closeLevelUpModal()">Awesome!</button>
+        </div>
+    </div>
 
-</html>
+    <!-- Achievement Unlocked Modal -->
+    <div id="achievement-modal" class="modal">
+        <div class="modal-content achievement-unlock">
+            <h2>🏆 Achievement Unlocked!</h2>
+            <div id="achievement-text"></div>
+            <button class="primary-btn" onclick="closeAchievementModal()">Sweet!</button>
+        </div>
+    </div>
 
+    <!-- Add Custom Quest Modal -->
+    <div id="add-quest-modal" class="modal">
+        <div class="modal-content">
+            <h2>Add Custom Quest</h2>
+            <form id="custom-quest-form">
+                <div class="form-group">
+                    <label for="quest-name">Quest Name</label>
+                    <input type="text" id="quest-name" required placeholder="e.g., Meditation session">
+                </div>
+                
+                <div class="form-group">
+                    <label for="quest-skill">Skill</label>
+                    <select id="quest-skill" required>
+                        <option value="strength">💪 Strength</option>
+                        <option value="creativity">🎨 Creativity</option>
+                        <option value="intelligence">🧠 Intelligence</option>
+                        <option value="charisma">💬 Charisma</option>
+                        <option value="wisdom">🧘 Wisdom</option>
+                        <option value="constitution">📋 Constitution</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="quest-xp">XP Value</label>
+                    <input type="number" id="quest-xp" required min="1" max="500" value="30">
+                </div>
+                
+                <div class="form-group">
+                    <label for="quest-type">Type</label>
+                    <select id="quest-type" required>
+                        <option value="daily">Daily (repeatable every day)</option>
+                        <option value="weekly">Weekly (once per week)</option>
+                        <option value="monthly">Monthly (once per month)</option>
+                        <option value="as-needed">As-Needed (one-time or irregular)</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label>Path Tags (optional)</label>
+                    <div class="tag-checkboxes">
+                        <label class="tag-checkbox">
+                            <input type="checkbox" value="business-path"> 🚀 Business Path
+                        </label>
+                        <label class="tag-checkbox">
+                            <input type="checkbox" value="culinary-master"> 🍳 Culinary Master
+                        </label>
+                        <label class="tag-checkbox">
+                            <input type="checkbox" value="artistic-visionary"> 🎨 Artistic Visionary
+                        </label>
+                        <label class="tag-checkbox">
+                            <input type="checkbox" value="lifestyle-influencer"> 📸 Lifestyle Influencer
+                        </label>
+                        <label class="tag-checkbox">
+                            <input type="checkbox" value="fitness-goddess"> 💪 Fitness Goddess
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="button" class="secondary-btn" onclick="closeAddQuestModal()">Cancel</button>
+                    <button type="submit" class="primary-btn">Add Quest</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit Quest Modal -->
+    <div id="edit-quest-modal" class="modal">
+        <div class="modal-content">
+            <h2>Edit Quest</h2>
+            <form id="edit-quest-form">
+                <div class="form-group">
+                    <label for="edit-quest-name">Quest Name</label>
+                    <input type="text" id="edit-quest-name" required placeholder="e.g., Meditation session">
+                </div>
+                
+                <div class="form-group">
+                    <label for="edit-quest-skill">Skill</label>
+                    <select id="edit-quest-skill" required>
+                        <option value="strength">💪 Strength</option>
+                        <option value="creativity">🎨 Creativity</option>
+                        <option value="intelligence">🧠 Intelligence</option>
+                        <option value="charisma">💬 Charisma</option>
+                        <option value="wisdom">🧘 Wisdom</option>
+                        <option value="constitution">📋 Constitution</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="edit-quest-xp">XP Value</label>
+                    <input type="number" id="edit-quest-xp" required min="1" max="500" value="30">
+                </div>
+                
+                <div class="form-group">
+                    <label for="edit-quest-type">Type</label>
+                    <select id="edit-quest-type" required>
+                        <option value="daily">Daily (repeatable every day)</option>
+                        <option value="weekly">Weekly (once per week)</option>
+                        <option value="monthly">Monthly (once per month)</option>
+                        <option value="as-needed">As-Needed (one-time or irregular)</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label>Path Tags (optional)</label>
+                    <div class="tag-checkboxes" id="edit-tag-checkboxes">
+                        <label class="tag-checkbox">
+                            <input type="checkbox" value="business-path"> 🚀 Business Path
+                        </label>
+                        <label class="tag-checkbox">
+                            <input type="checkbox" value="culinary-master"> 🍳 Culinary Master
+                        </label>
+                        <label class="tag-checkbox">
+                            <input type="checkbox" value="artistic-visionary"> 🎨 Artistic Visionary
+                        </label>
+                        <label class="tag-checkbox">
+                            <input type="checkbox" value="lifestyle-influencer"> 📸 Lifestyle Influencer
+                        </label>
+                        <label class="tag-checkbox">
+                            <input type="checkbox" value="fitness-goddess"> 💪 Fitness Goddess
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="button" class="secondary-btn" onclick="closeEditQuestModal()">Cancel</button>
+                    <button type="submit" class="primary-btn">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add Collection Log Modal -->
+    <div id="add-log-modal" class="modal">
+        <div class="modal-content">
+            <h2>Add to Collection Log</h2>
+            <form id="collection-log-form">
+                <div class="form-group">
+                    <label for="log-title">Experience Title</label>
+                    <input type="text" id="log-title" required placeholder="e.g., Date night at The French Laundry">
+                </div>
+                
+                <div class="form-group">
+                    <label for="log-description">Description (optional)</label>
+                    <textarea id="log-description" rows="3" placeholder="What makes this special? Who will you be with?"></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label for="log-tags">Tags (comma-separated)</label>
+                    <input type="text" id="log-tags" placeholder="date-night, food, friends, travel, etc.">
+                    <small style="color: var(--osrs-tan); font-size: 0.8rem;">Suggestions: date-night, food, travel, friends, family, art, adventure, milestone</small>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="button" class="secondary-btn" onclick="closeAddLogModal()">Cancel</button>
+                    <button type="submit" class="primary-btn">Add to Log</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Complete Collection Log Modal -->
+    <div id="complete-log-modal" class="modal">
+        <div class="modal-content">
+            <h2 id="complete-log-title">Complete Experience</h2>
+            <p style="color: var(--osrs-tan); margin-bottom: 1rem;">Add a photo to complete this collection log entry!</p>
+            
+            <div class="form-group">
+                <input type="file" id="log-photo-input" accept="image/*" capture="environment" style="display: none;">
+                <button type="button" class="primary-btn" onclick="document.getElementById('log-photo-input').click()">
+                    📷 Take/Upload Photo
+                </button>
+                <div id="log-photo-preview" style="margin-top: 1rem;"></div>
+            </div>
+            
+            <div class="form-actions">
+                <button type="button" class="secondary-btn" onclick="closeCompleteLogModal()">Cancel</button>
+                <button type="button" id="save-log-photo-btn" class="primary-btn" disabled>Complete Entry</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Skill Detail Modal -->
+    <div id="skill-detail-modal" class="modal">
+        <div class="modal-content" style="max-width: 600px;">
+            <h2 id="skill-detail-title">💪 Strength</h2>
+            
+            <div class="skill-detail-stats">
+                <div class="stat-card">
+                    <span class="stat-label">Level</span>
+                    <span class="stat-value" id="skill-detail-level">1</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-label">XP</span>
+                    <span class="stat-value" id="skill-detail-xp">0</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-label">Streak</span>
+                    <span class="stat-value" id="skill-detail-streak">0</span>
+                </div>
+            </div>
+
+            <div class="skill-detail-section">
+                <h3>Recent Completions</h3>
+                <div id="skill-recent-completions">
+                    <p style="color: var(--osrs-tan); font-style: italic;">No completions yet today</p>
+                </div>
+            </div>
+
+            <div class="skill-detail-section">
+                <h3>Available Quests</h3>
+                <div id="skill-available-quests">
+                    <p style="color: var(--osrs-tan); font-style: italic;">No quests for this skill</p>
+                </div>
+            </div>
+
+            <button class="primary-btn" onclick="closeSkillDetailModal()">Close</button>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('service-worker.js')
+                .then(reg => console.log('Service Worker registered'))
+                .catch(err => console.log('Service Worker registration failed'));
+        }
+    </script>
 </body>
 </html>
