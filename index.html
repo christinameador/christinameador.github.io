@@ -17,7 +17,7 @@
             <button class="nav-btn" data-view="quests">Quests</button>
             <button class="nav-btn" data-view="paths">Paths</button>
             <button class="nav-btn" data-view="achievements">Achievements</button>
-            <button class="nav-btn" data-view="challenges">Challenges</button>
+            <button class="nav-btn" data-view="settings">⚙️</button>
         </nav>
 
         <!-- Character Sheet View -->
@@ -292,10 +292,14 @@
         <div id="challenges-view" class="view">
             <div class="view-header">
                 <h2>Active Challenges</h2>
-                <button id="start-75hard-btn" class="primary-btn">Start 75 Hard</button>
+                <button id="add-challenge-btn" class="primary-btn">+ New Challenge</button>
             </div>
 
-            <div id="active-challenge-container"></div>
+            <div id="active-challenges-container"></div>
+            
+            <div id="no-challenges-message" style="display: none;">
+                <p style="color: var(--osrs-tan); padding: 2rem; text-align: center;">No active challenges. Click "+ New Challenge" to start one!</p>
+            </div>
         </div>
 
         <!-- Collection Log View -->
@@ -356,6 +360,66 @@
             </div>
 
             <div id="photos-container" class="photos-grid"></div>
+        </div>
+
+        <!-- Settings View -->
+        <div id="settings-view" class="view">
+            <div class="view-header">
+                <h2>Settings & Data</h2>
+            </div>
+
+            <div class="settings-section">
+                <h3>Data Management</h3>
+                <p style="color: var(--osrs-tan); margin-bottom: 1rem;">Export your data before updating the app, then import it back to keep your progress!</p>
+                
+                <div class="settings-group">
+                    <h4>Full Backup</h4>
+                    <p class="settings-description">Export everything: quests, progress, streaks, collection log, photos</p>
+                    <div class="settings-actions">
+                        <button class="primary-btn" onclick="app.exportAllData()">📥 Export All Data (JSON)</button>
+                        <button class="secondary-btn" onclick="document.getElementById('import-all-input').click()">📤 Import All Data</button>
+                        <input type="file" id="import-all-input" accept=".json" style="display: none;" onchange="app.importAllData(event)">
+                    </div>
+                </div>
+
+                <div class="settings-group">
+                    <h4>Quests Only</h4>
+                    <p class="settings-description">Export/import just quest definitions (useful for bulk editing in Excel/Sheets)</p>
+                    <div class="settings-actions">
+                        <button class="primary-btn" onclick="app.exportQuests()">📥 Export Quests (CSV)</button>
+                        <button class="secondary-btn" onclick="document.getElementById('import-quests-input').click()">📤 Import Quests (CSV)</button>
+                        <input type="file" id="import-quests-input" accept=".csv" style="display: none;" onchange="app.importQuests(event)">
+                    </div>
+                </div>
+
+                <div class="settings-group">
+                    <h4>Reset Data</h4>
+                    <p class="settings-description" style="color: #d32f2f;">⚠️ Warning: This will delete all your progress!</p>
+                    <div class="settings-actions">
+                        <button class="secondary-btn" onclick="app.resetAllData()" style="border-color: #d32f2f; color: #d32f2f;">🗑️ Reset Everything</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="settings-section">
+                <h3>Quick Access</h3>
+                <div class="settings-actions">
+                    <button class="secondary-btn" onclick="app.switchView('challenges')">⚔️ 75 Hard Challenge</button>
+                    <button class="secondary-btn" onclick="app.switchView('collection-log')">📸 Collection Log</button>
+                    <button class="secondary-btn" onclick="app.switchView('photos')">🖼️ Photo Gallery</button>
+                </div>
+            </div>
+
+            <div class="settings-section">
+                <h3>About</h3>
+                <p style="color: var(--osrs-tan); line-height: 1.6;">
+                    <strong style="color: var(--osrs-gold);">Life RPG v1.0</strong><br>
+                    OSRS-inspired life gamification<br>
+                    Built with vanilla JavaScript<br>
+                    <br>
+                    Track quests, build streaks, level up your life! 🎮
+                </p>
+            </div>
         </div>
     </div>
 
@@ -594,6 +658,86 @@
             </div>
 
             <button class="primary-btn" onclick="closeSkillDetailModal()">Close</button>
+        </div>
+    </div>
+
+    <!-- Add Challenge Modal -->
+    <div id="add-challenge-modal" class="modal" onclick="if(event.target === this) closeAddChallengeModal()">
+        <div class="modal-content">
+            <h2>Start a Challenge</h2>
+            
+            <div class="challenge-templates">
+                <div class="template-card" onclick="app.startChallengeTemplate('75hard')">
+                    <div class="template-icon">⚔️</div>
+                    <div class="template-info">
+                        <h3>75 Hard</h3>
+                        <p>The ultimate mental toughness challenge</p>
+                    </div>
+                </div>
+
+                <div class="template-card" onclick="app.startChallengeTemplate('imdb-movies')">
+                    <div class="template-icon">🎬</div>
+                    <div class="template-info">
+                        <h3>IMDb Top Movies</h3>
+                        <p>Watch the greatest films of all time</p>
+                    </div>
+                </div>
+
+                <div class="template-card" onclick="app.startChallengeTemplate('pinterest-crafts')">
+                    <div class="template-icon">📌</div>
+                    <div class="template-info">
+                        <h3>Monthly Craft Projects</h3>
+                        <p>Complete Pinterest crafts with themes</p>
+                    </div>
+                </div>
+
+                <div class="template-card" onclick="app.startChallengeTemplate('custom')">
+                    <div class="template-icon">✨</div>
+                    <div class="template-info">
+                        <h3>Custom Challenge</h3>
+                        <p>Create your own challenge</p>
+                    </div>
+                </div>
+            </div>
+
+            <button class="secondary-btn" onclick="closeAddChallengeModal()">Cancel</button>
+        </div>
+    </div>
+
+    <!-- Custom Challenge Modal -->
+    <div id="custom-challenge-modal" class="modal" onclick="if(event.target === this) closeCustomChallengeModal()">
+        <div class="modal-content">
+            <h2>Create Custom Challenge</h2>
+            <form id="custom-challenge-form">
+                <div class="form-group">
+                    <label for="challenge-name">Challenge Name</label>
+                    <input type="text" id="challenge-name" required placeholder="e.g., 30 Day Reading Challenge">
+                </div>
+
+                <div class="form-group">
+                    <label for="challenge-description">Description (optional)</label>
+                    <textarea id="challenge-description" rows="2" placeholder="What's this challenge about?"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="challenge-type">Type</label>
+                    <select id="challenge-type" required>
+                        <option value="daily-checklist">Daily Checklist (reset each day)</option>
+                        <option value="progress-tracker">Progress Tracker (count items)</option>
+                        <option value="streak-tracker">Streak Tracker</option>
+                    </select>
+                </div>
+
+                <div class="form-group" id="challenge-items-group">
+                    <label for="challenge-items">Items/Tasks (one per line)</label>
+                    <textarea id="challenge-items" rows="5" placeholder="Item 1&#10;Item 2&#10;Item 3"></textarea>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" class="secondary-btn" onclick="closeCustomChallengeModal()">Cancel</button>
+                    <button type="submit" class="primary-btn">Create Challenge</button>
+                </div>
+            </form>
         </div>
     </div>
 

@@ -56,7 +56,7 @@ class LifeRPG {
             quests: this.getDefaultQuests(),
             completedToday: [],
             achievements: this.getDefaultAchievements(),
-            activeChallenge: null,
+            challenges: [], // Array of active challenges
             photos: [],
             collectionLog: [],
             lastActiveDate: new Date().toDateString()
@@ -178,6 +178,14 @@ class LifeRPG {
         // Initialize collection log if it doesn't exist
         if (!this.data.collectionLog) {
             this.data.collectionLog = [];
+        }
+
+        // Migrate old activeChallenge to challenges array
+        if (this.data.activeChallenge && !this.data.challenges) {
+            this.data.challenges = [this.data.activeChallenge];
+            delete this.data.activeChallenge;
+        } else if (!this.data.challenges) {
+            this.data.challenges = [];
         }
         
         // Migrate old category system to tags
@@ -314,6 +322,21 @@ class LifeRPG {
             savePhotoBtn.addEventListener('click', () => this.saveLogCompletion());
         }
 
+        // Challenge buttons
+        const addChallengeBtn = document.getElementById('add-challenge-btn');
+        if (addChallengeBtn) {
+            addChallengeBtn.addEventListener('click', () => this.openAddChallengeModal());
+        }
+
+        // Custom challenge form
+        const customChallengeForm = document.getElementById('custom-challenge-form');
+        if (customChallengeForm) {
+            customChallengeForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                this.createCustomChallenge();
+            });
+        }
+
         // Collection log filters
         document.querySelectorAll('[data-log-filter]').forEach(btn => {
             btn.addEventListener('click', (e) => this.filterCollectionLogs(e.target.dataset.logFilter));
@@ -330,13 +353,17 @@ class LifeRPG {
         document.querySelectorAll('.view').forEach(view => {
             view.classList.remove('active');
         });
-        document.getElementById(`${viewName}-view`).classList.add('active');
+        
+        const targetView = document.getElementById(`${viewName}-view`);
+        if (targetView) {
+            targetView.classList.add('active');
+        }
 
         // Render content for the view
         if (viewName === 'paths') {
             this.renderPaths();
         } else if (viewName === 'challenges') {
-            this.renderActiveChallenge();
+            this.renderChallenges();
         } else if (viewName === 'photos') {
             this.renderPhotos();
         } else if (viewName === 'collection-log') {
@@ -1274,6 +1301,319 @@ class LifeRPG {
         });
     }
 
+    // Challenge Management Methods
+    openAddChallengeModal() {
+        document.getElementById('add-challenge-modal').classList.add('active');
+        document.body.classList.add('modal-open');
+    }
+
+    startChallengeTemplate(templateType) {
+        closeAddChallengeModal();
+
+        if (templateType === '75hard') {
+            this.start75Hard();
+        } else if (templateType === 'imdb-movies') {
+            this.startIMDbMovies();
+        } else if (templateType === 'pinterest-crafts') {
+            this.startPinterestCrafts();
+        } else if (templateType === 'custom') {
+            document.getElementById('custom-challenge-modal').classList.add('active');
+            document.body.classList.add('modal-open');
+        }
+    }
+
+    start75Hard() {
+        const challenge = {
+            id: 'challenge_' + Date.now(),
+            type: '75hard',
+            name: '75 Hard Challenge',
+            description: 'Complete 7 daily tasks for 75 consecutive days',
+            icon: '⚔️',
+            day: 1,
+            startDate: new Date().toISOString(),
+            checklist: [
+                { id: '75h_workout1', text: 'First 45-minute workout', completed: false },
+                { id: '75h_workout2', text: 'Second 45-minute workout (1 outdoors)', completed: false },
+                { id: '75h_water', text: 'Drink a gallon of water', completed: false },
+                { id: '75h_read', text: 'Read 10 pages of nonfiction', completed: false },
+                { id: '75h_photo', text: 'Take a progress photo', completed: false },
+                { id: '75h_diet', text: 'Follow diet (no cheat meals)', completed: false },
+                { id: '75h_alcohol', text: 'No alcohol', completed: false }
+            ]
+        };
+
+        this.data.challenges.push(challenge);
+        this.saveData();
+        this.renderChallenges();
+        this.switchView('challenges');
+    }
+
+    startIMDbMovies() {
+        const challenge = {
+            id: 'challenge_' + Date.now(),
+            type: 'imdb-movies',
+            name: 'IMDb Top Movies',
+            description: 'Watch the best movies of all time with Scott',
+            icon: '🎬',
+            items: [
+                { id: 'movie_1', text: 'The Shawshank Redemption (1994)', completed: false, date: null },
+                { id: 'movie_2', text: 'The Godfather (1972)', completed: false, date: null },
+                { id: 'movie_3', text: 'The Dark Knight (2008)', completed: false, date: null },
+                { id: 'movie_4', text: 'The Godfather Part II (1974)', completed: false, date: null },
+                { id: 'movie_5', text: '12 Angry Men (1957)', completed: false, date: null },
+                { id: 'movie_6', text: 'Schindler\'s List (1993)', completed: false, date: null },
+                { id: 'movie_7', text: 'The Lord of the Rings: The Return of the King (2003)', completed: false, date: null },
+                { id: 'movie_8', text: 'Pulp Fiction (1994)', completed: false, date: null },
+                { id: 'movie_9', text: 'The Lord of the Rings: The Fellowship of the Ring (2001)', completed: false, date: null },
+                { id: 'movie_10', text: 'Forrest Gump (1994)', completed: false, date: null }
+            ]
+        };
+
+        this.data.challenges.push(challenge);
+        this.saveData();
+        this.renderChallenges();
+        this.switchView('challenges');
+        alert('IMDb Top Movies challenge started! Add more movies as you go. 🎬');
+    }
+
+    startPinterestCrafts() {
+        const challenge = {
+            id: 'challenge_' + Date.now(),
+            type: 'pinterest-crafts',
+            name: 'Monthly Craft Projects',
+            description: 'Complete Pinterest crafts with monthly themes',
+            icon: '📌',
+            items: []
+        };
+
+        this.data.challenges.push(challenge);
+        this.saveData();
+        this.renderChallenges();
+        this.switchView('challenges');
+        alert('Monthly Craft Projects started! Add your Pinterest pins with themes. 📌');
+    }
+
+    createCustomChallenge() {
+        const name = document.getElementById('challenge-name').value;
+        const description = document.getElementById('challenge-description').value;
+        const type = document.getElementById('challenge-type').value;
+        const itemsText = document.getElementById('challenge-items').value;
+
+        const items = itemsText
+            .split('\n')
+            .map(line => line.trim())
+            .filter(line => line.length > 0)
+            .map((text, index) => ({
+                id: `custom_${Date.now()}_${index}`,
+                text: text,
+                completed: false,
+                date: null
+            }));
+
+        const challenge = {
+            id: 'challenge_' + Date.now(),
+            type: type,
+            name: name,
+            description: description,
+            icon: '✨',
+            items: items,
+            day: type === 'daily-checklist' ? 1 : undefined,
+            count: type === 'progress-tracker' ? 0 : undefined,
+            streak: type === 'streak-tracker' ? 0 : undefined
+        };
+
+        this.data.challenges.push(challenge);
+        this.saveData();
+        closeCustomChallengeModal();
+        document.getElementById('custom-challenge-form').reset();
+        this.renderChallenges();
+        this.switchView('challenges');
+    }
+
+    renderChallenges() {
+        const container = document.getElementById('active-challenges-container');
+        if (!container) return;
+
+        container.innerHTML = '';
+
+        if (this.data.challenges.length === 0) {
+            container.innerHTML = '<p style="color: var(--osrs-tan); padding: 2rem; text-align: center;">No active challenges. Click "+ Add Challenge" to start one!</p>';
+            return;
+        }
+
+        this.data.challenges.forEach(challenge => {
+            const card = this.createChallengeCard(challenge);
+            container.appendChild(card);
+        });
+    }
+
+    createChallengeCard(challenge) {
+        const card = document.createElement('div');
+        card.className = 'challenge-card';
+        card.dataset.challengeId = challenge.id;
+
+        if (challenge.type === '75hard') {
+            return this.create75HardCard(challenge, card);
+        } else if (challenge.type === 'imdb-movies' || challenge.type === 'pinterest-crafts') {
+            return this.createListChallengeCard(challenge, card);
+        } else {
+            return this.createCustomChallengeCard(challenge, card);
+        }
+    }
+
+    create75HardCard(challenge, card) {
+        const completedToday = challenge.checklist.filter(item => item.completed).length;
+        const total = challenge.checklist.length;
+        const allComplete = completedToday === total;
+
+        card.innerHTML = `
+            <div class="challenge-header">
+                <div class="challenge-title-section">
+                    <div class="challenge-icon-title">
+                        <span class="challenge-icon">${challenge.icon}</span>
+                        <h3 class="challenge-title">${challenge.name}</h3>
+                    </div>
+                    <div class="challenge-description">${challenge.description}</div>
+                    <div class="challenge-progress-text">Day ${challenge.day} of 75 | ${completedToday}/${total} complete today</div>
+                </div>
+                <div class="challenge-actions">
+                    <button class="delete-btn" onclick="app.deleteChallenge('${challenge.id}')" title="Delete challenge">🗑️</button>
+                </div>
+            </div>
+            <div class="challenge-checklist" id="checklist-${challenge.id}"></div>
+        `;
+
+        const checklistContainer = card.querySelector(`#checklist-${challenge.id}`);
+        challenge.checklist.forEach(item => {
+            const itemDiv = document.createElement('div');
+            itemDiv.className = `challenge-item ${item.completed ? 'completed' : ''}`;
+            itemDiv.innerHTML = `
+                <input type="checkbox" class="challenge-checkbox" ${item.completed ? 'checked' : ''}
+                    onchange="app.toggleChallengeItem('${challenge.id}', '${item.id}')">
+                <span class="challenge-item-text">${item.text}</span>
+            `;
+            checklistContainer.appendChild(itemDiv);
+        });
+
+        return card;
+    }
+
+    createListChallengeCard(challenge, card) {
+        const completed = challenge.items.filter(item => item.completed).length;
+        const total = challenge.items.length;
+
+        const listClass = challenge.type === 'imdb-movies' ? 'movie-list' : 'craft-list';
+        const placeholder = challenge.type === 'imdb-movies' 
+            ? 'e.g., Casablanca (1942)' 
+            : 'e.g., January Theme: Winter Wreaths';
+
+        card.innerHTML = `
+            <div class="challenge-header">
+                <div class="challenge-title-section">
+                    <div class="challenge-icon-title">
+                        <span class="challenge-icon">${challenge.icon}</span>
+                        <h3 class="challenge-title">${challenge.name}</h3>
+                    </div>
+                    <div class="challenge-description">${challenge.description}</div>
+                    <div class="challenge-progress-text">${completed} of ${total} completed</div>
+                </div>
+                <div class="challenge-actions">
+                    <button class="delete-btn" onclick="app.deleteChallenge('${challenge.id}')" title="Delete challenge">🗑️</button>
+                </div>
+            </div>
+            <div class="${listClass}" id="list-${challenge.id}"></div>
+            <div class="add-item-section">
+                <div class="add-item-form">
+                    <input type="text" class="add-item-input" id="new-item-${challenge.id}" 
+                        placeholder="${placeholder}">
+                    <button class="add-item-btn" onclick="app.addChallengeItem('${challenge.id}')">+ Add</button>
+                </div>
+            </div>
+        `;
+
+        const listContainer = card.querySelector(`#list-${challenge.id}`);
+        challenge.items.forEach(item => {
+            const itemDiv = document.createElement('div');
+            itemDiv.className = `challenge-item ${item.completed ? 'completed' : ''}`;
+            itemDiv.innerHTML = `
+                <input type="checkbox" class="challenge-checkbox" ${item.completed ? 'checked' : ''}
+                    onchange="app.toggleChallengeItem('${challenge.id}', '${item.id}')">
+                <span class="challenge-item-text">${item.text}</span>
+            `;
+            listContainer.appendChild(itemDiv);
+        });
+
+        return card;
+    }
+
+    createCustomChallengeCard(challenge, card) {
+        // Similar to list challenge but with type-specific display
+        return this.createListChallengeCard(challenge, card);
+    }
+
+    toggleChallengeItem(challengeId, itemId) {
+        const challenge = this.data.challenges.find(c => c.id === challengeId);
+        if (!challenge) return;
+
+        if (challenge.type === '75hard') {
+            const item = challenge.checklist.find(i => i.id === itemId);
+            if (item) {
+                item.completed = !item.completed;
+
+                // Check if all items completed
+                const allComplete = challenge.checklist.every(i => i.completed);
+                if (allComplete) {
+                    challenge.day++;
+                    // Reset checklist for next day
+                    challenge.checklist.forEach(i => i.completed = false);
+                    alert(`Day ${challenge.day - 1} complete! Starting Day ${challenge.day}! 💪`);
+                }
+            }
+        } else {
+            const item = challenge.items.find(i => i.id === itemId);
+            if (item) {
+                item.completed = !item.completed;
+                item.date = item.completed ? new Date().toISOString() : null;
+            }
+        }
+
+        this.saveData();
+        this.renderChallenges();
+    }
+
+    addChallengeItem(challengeId) {
+        const challenge = this.data.challenges.find(c => c.id === challengeId);
+        if (!challenge) return;
+
+        const input = document.getElementById(`new-item-${challengeId}`);
+        const text = input.value.trim();
+        
+        if (!text) return;
+
+        const newItem = {
+            id: `item_${Date.now()}`,
+            text: text,
+            completed: false,
+            date: null
+        };
+
+        challenge.items.push(newItem);
+        input.value = '';
+
+        this.saveData();
+        this.renderChallenges();
+    }
+
+    deleteChallenge(challengeId) {
+        if (!confirm('Are you sure you want to delete this challenge?')) {
+            return;
+        }
+
+        this.data.challenges = this.data.challenges.filter(c => c.id !== challengeId);
+        this.saveData();
+        this.renderChallenges();
+    }
+
     // Skill Detail Methods
     openSkillDetail(skillName) {
         const skill = this.data.skills[skillName];
@@ -1340,6 +1680,144 @@ class LifeRPG {
         document.getElementById('skill-detail-modal').classList.add('active');
         document.body.classList.add('modal-open');
     }
+
+    // Data Management Methods
+    exportAllData() {
+        const dataStr = JSON.stringify(this.data, null, 2);
+        const dataBlob = new Blob([dataStr], { type: 'application/json' });
+        const url = URL.createObjectURL(dataBlob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `life-rpg-backup-${new Date().toISOString().split('T')[0]}.json`;
+        link.click();
+        URL.revokeObjectURL(url);
+        alert('Data exported! Save this file in a safe place.');
+    }
+
+    importAllData(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        if (!confirm('This will replace ALL your current data. Are you sure?')) {
+            event.target.value = ''; // Reset file input
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                const importedData = JSON.parse(e.target.result);
+                
+                // Basic validation
+                if (!importedData.skills || !importedData.quests) {
+                    alert('Invalid data file. Missing required fields.');
+                    return;
+                }
+
+                // Import the data
+                this.data = importedData;
+                this.saveData();
+                
+                // Re-render everything
+                this.renderCharacterSheet();
+                this.renderQuests();
+                this.renderAchievements();
+                
+                alert('Data imported successfully! Your progress has been restored.');
+                this.switchView('character');
+            } catch (error) {
+                alert('Error importing data: ' + error.message);
+            }
+            event.target.value = ''; // Reset file input
+        };
+        reader.readAsText(file);
+    }
+
+    exportQuests() {
+        // CSV headers
+        let csv = 'id,name,xp,skill,type,tags,custom\n';
+        
+        // Add each quest
+        this.data.quests.forEach(quest => {
+            const tags = (quest.tags || []).join(';');
+            const custom = quest.custom ? 'true' : 'false';
+            csv += `"${quest.id}","${quest.name}",${quest.xp},"${quest.skill}","${quest.type}","${tags}","${custom}"\n`;
+        });
+
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `life-rpg-quests-${new Date().toISOString().split('T')[0]}.csv`;
+        link.click();
+        URL.revokeObjectURL(url);
+        alert('Quests exported! You can edit this CSV in Excel/Sheets and re-import it.');
+    }
+
+    importQuests(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        if (!confirm('This will replace your quest definitions. Your progress will be kept. Continue?')) {
+            event.target.value = '';
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                const csv = e.target.result;
+                const lines = csv.split('\n');
+                const newQuests = [];
+
+                // Skip header, parse each line
+                for (let i = 1; i < lines.length; i++) {
+                    const line = lines[i].trim();
+                    if (!line) continue;
+
+                    // Parse CSV line (handle quoted values)
+                    const matches = line.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g);
+                    if (!matches || matches.length < 6) continue;
+
+                    const [id, name, xp, skill, type, tags, custom] = matches.map(m => m.replace(/^"|"$/g, ''));
+                    
+                    newQuests.push({
+                        id: id,
+                        name: name,
+                        xp: parseInt(xp),
+                        skill: skill,
+                        type: type,
+                        tags: tags ? tags.split(';') : [],
+                        custom: custom === 'true'
+                    });
+                }
+
+                this.data.quests = newQuests;
+                this.saveData();
+                this.renderQuests();
+                
+                alert(`Imported ${newQuests.length} quests successfully!`);
+                this.switchView('quests');
+            } catch (error) {
+                alert('Error importing quests: ' + error.message);
+            }
+            event.target.value = '';
+        };
+        reader.readAsText(file);
+    }
+
+    resetAllData() {
+        if (!confirm('⚠️ This will DELETE ALL your data! Are you absolutely sure?')) {
+            return;
+        }
+        
+        if (!confirm('Last chance! This cannot be undone. Delete everything?')) {
+            return;
+        }
+
+        localStorage.removeItem('lifeRPGData');
+        location.reload();
+    }
 }
 
 // Close modals
@@ -1378,6 +1856,16 @@ function closeCompleteLogModal() {
 
 function closeSkillDetailModal() {
     document.getElementById('skill-detail-modal').classList.remove('active');
+    document.body.classList.remove('modal-open');
+}
+
+function closeAddChallengeModal() {
+    document.getElementById('add-challenge-modal').classList.remove('active');
+    document.body.classList.remove('modal-open');
+}
+
+function closeCustomChallengeModal() {
+    document.getElementById('custom-challenge-modal').classList.remove('active');
     document.body.classList.remove('modal-open');
 }
 
