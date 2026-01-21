@@ -7,12 +7,17 @@
     --osrs-border: #8b7355;
     --osrs-gold: #ffd700;
     
-    --strength-color: #d32f2f;
-    --creativity-color: #9c27b0;
-    --intelligence-color: #2196f3;
-    --charisma-color: #ff9800;
-    --wisdom-color: #4caf50;
-    --constitution-color: #795548;
+    /* New 10-Skill Colors */
+    --athleticism-color: #e74c3c;
+    --culinary-color: #f39c12;
+    --artistry-color: #9b59b6;
+    --business-color: #3498db;
+    --partnership-color: #e91e63;
+    --friendships-color: #ff6b81;
+    --innerPeace-color: #27ae60;
+    --homeCraft-color: #795548;
+    --generosity-color: #f8bbd9;
+    --influence-color: #00bcd4;
 }
 
 * {
@@ -1369,5 +1374,1221 @@ textarea:focus {
     .tag-checkbox {
         min-height: 44px;
         padding: 0.75rem;
+    }
+}
+/* Life RPG v3 - Additional Styles */
+
+/* ═══════════════════════════════════════════════════════════════════
+   CSS VARIABLES (extending existing)
+   ═══════════════════════════════════════════════════════════════════ */
+
+:root {
+    --athleticism-color: #e74c3c;
+    --culinary-color: #f39c12;
+    --artistry-color: #9b59b6;
+    --business-color: #3498db;
+    --partnership-color: #e91e63;
+    --friendships-color: #ff6b81;
+    --innerPeace-color: #27ae60;
+    --homeCraft-color: #795548;
+    --generosity-color: #f8bbd9;
+    --influence-color: #00bcd4;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   QUEST CARDS (v2)
+   ═══════════════════════════════════════════════════════════════════ */
+
+.quest-card {
+    background: linear-gradient(135deg, #3a2a1a 0%, #2b1810 100%);
+    border: 2px solid var(--osrs-border);
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 0.75rem;
+    transition: all 0.2s ease;
+}
+
+.quest-card:hover {
+    border-color: var(--osrs-gold);
+    transform: translateY(-2px);
+}
+
+.quest-card.completed {
+    opacity: 0.6;
+    border-color: #27ae60;
+}
+
+.quest-card.completed .quest-name {
+    text-decoration: line-through;
+}
+
+.quest-header {
+    margin-bottom: 0.75rem;
+}
+
+.quest-title-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.quest-name {
+    font-size: 1.1rem;
+    font-weight: bold;
+    color: var(--osrs-gold);
+}
+
+.custom-badge {
+    font-size: 0.7rem;
+    background: var(--osrs-gold);
+    color: #1a1a1a;
+    padding: 0.1rem 0.4rem;
+    border-radius: 4px;
+}
+
+.quest-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    align-items: center;
+}
+
+.frequency-badge {
+    font-size: 0.7rem;
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    color: white;
+    text-transform: uppercase;
+    font-weight: bold;
+}
+
+.path-badge {
+    font-size: 0.9rem;
+    padding: 0.1rem 0.3rem;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    cursor: help;
+}
+
+.path-badge.satisfied {
+    opacity: 0.4;
+}
+
+.challenge-badge {
+    font-size: 0.9rem;
+    padding: 0.1rem 0.3rem;
+    background: rgba(231, 76, 60, 0.3);
+    border-radius: 4px;
+}
+
+.challenge-badge.done {
+    opacity: 0.4;
+}
+
+.quest-rewards {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+}
+
+.xp-reward {
+    font-size: 0.85rem;
+    padding: 0.2rem 0.5rem;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    border-left: 3px solid var(--skill-color, var(--osrs-gold));
+}
+
+.quest-actions {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.complete-btn {
+    flex: 1;
+    padding: 0.6rem 1rem;
+    background: linear-gradient(135deg, var(--osrs-gold) 0%, #b8860b 100%);
+    border: none;
+    border-radius: 6px;
+    color: #1a1a1a;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.complete-btn:hover:not(:disabled) {
+    transform: scale(1.02);
+    box-shadow: 0 4px 12px rgba(255, 215, 0, 0.3);
+}
+
+.complete-btn:disabled {
+    background: #27ae60;
+    cursor: default;
+}
+
+.edit-btn, .delete-btn {
+    padding: 0.5rem;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.edit-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.delete-btn:hover {
+    background: rgba(231, 76, 60, 0.3);
+    border-color: #e74c3c;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   PATH CARDS (v2)
+   ═══════════════════════════════════════════════════════════════════ */
+
+.paths-grid {
+    display: grid;
+    gap: 1rem;
+}
+
+.path-card {
+    background: linear-gradient(135deg, #3a2a1a 0%, #2b1810 100%);
+    border: 2px solid var(--osrs-border);
+    border-radius: 12px;
+    padding: 1.25rem;
+    transition: all 0.2s ease;
+}
+
+.path-card:hover {
+    border-color: var(--osrs-gold);
+}
+
+.path-card.completed {
+    border-color: #27ae60;
+    background: linear-gradient(135deg, #1a3a1a 0%, #0d2510 100%);
+}
+
+.path-header {
+    display: flex;
+    gap: 1rem;
+    align-items: flex-start;
+    margin-bottom: 1rem;
+}
+
+.path-icon {
+    font-size: 2.5rem;
+    line-height: 1;
+}
+
+.path-title h3 {
+    margin: 0 0 0.25rem 0;
+    color: var(--osrs-gold);
+    font-size: 1.25rem;
+}
+
+.path-description {
+    margin: 0;
+    color: var(--osrs-tan);
+    font-size: 0.9rem;
+    opacity: 0.8;
+}
+
+.path-complete-badge {
+    margin-left: auto;
+    background: #27ae60;
+    color: white;
+    padding: 0.3rem 0.6rem;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    font-weight: bold;
+}
+
+.path-progress {
+    margin-bottom: 1rem;
+}
+
+.progress-bar {
+    height: 8px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 0.5rem;
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--osrs-gold) 0%, #ffd700 100%);
+    border-radius: 4px;
+    transition: width 0.3s ease;
+}
+
+.progress-text {
+    font-size: 0.85rem;
+    color: var(--osrs-tan);
+}
+
+.path-stages {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.path-stage {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    padding: 0.75rem;
+    border-left: 3px solid var(--osrs-border);
+}
+
+.path-stage.current {
+    border-left-color: var(--osrs-gold);
+    background: rgba(255, 215, 0, 0.1);
+}
+
+.path-stage.completed {
+    border-left-color: #27ae60;
+}
+
+.path-stage.locked {
+    opacity: 0.5;
+}
+
+.stage-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.stage-name {
+    font-weight: bold;
+    color: var(--osrs-tan);
+}
+
+.stage-check {
+    color: #27ae60;
+}
+
+.stage-lock {
+    font-size: 0.8rem;
+}
+
+.stage-quests {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+}
+
+.stage-quest {
+    font-size: 0.85rem;
+    color: var(--osrs-tan);
+    opacity: 0.7;
+}
+
+.stage-quest.satisfied {
+    color: #27ae60;
+    opacity: 1;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   CHALLENGE CARDS (v2)
+   ═══════════════════════════════════════════════════════════════════ */
+
+.empty-state {
+    text-align: center;
+    padding: 3rem;
+    color: var(--osrs-tan);
+}
+
+.add-challenge-btn {
+    margin-top: 1rem;
+    padding: 0.75rem 1.5rem;
+    background: linear-gradient(135deg, var(--osrs-gold) 0%, #b8860b 100%);
+    border: none;
+    border-radius: 8px;
+    color: #1a1a1a;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.challenge-card {
+    background: linear-gradient(135deg, #3a2a1a 0%, #2b1810 100%);
+    border: 2px solid var(--osrs-border);
+    border-radius: 12px;
+    padding: 1.25rem;
+    margin-bottom: 1rem;
+}
+
+.challenge-header {
+    display: flex;
+    gap: 1rem;
+    align-items: flex-start;
+    margin-bottom: 1rem;
+}
+
+.challenge-icon {
+    font-size: 2rem;
+}
+
+.challenge-title h3 {
+    margin: 0 0 0.25rem 0;
+    color: var(--osrs-gold);
+}
+
+.challenge-description {
+    margin: 0;
+    color: var(--osrs-tan);
+    font-size: 0.85rem;
+    opacity: 0.8;
+}
+
+.end-challenge-btn {
+    margin-left: auto;
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: var(--osrs-tan);
+    padding: 0.3rem 0.6rem;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.end-challenge-btn:hover {
+    border-color: #e74c3c;
+    color: #e74c3c;
+}
+
+.challenge-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.challenge-stats .stat {
+    text-align: center;
+    padding: 0.75rem;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+}
+
+.stat-value {
+    display: block;
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: var(--osrs-gold);
+}
+
+.stat-label {
+    font-size: 0.75rem;
+    color: var(--osrs-tan);
+    opacity: 0.7;
+}
+
+.stat.due-today .stat-value {
+    color: #f39c12;
+}
+
+.stat.due-soon .stat-value {
+    color: #e67e22;
+}
+
+.stat.overdue .stat-value {
+    color: #e74c3c;
+}
+
+.challenge-progress {
+    margin-bottom: 1rem;
+}
+
+.challenge-quests {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.challenge-quest {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 6px;
+}
+
+.challenge-quest.done {
+    opacity: 0.5;
+}
+
+.challenge-quest.done .quest-name {
+    text-decoration: line-through;
+}
+
+.quest-check {
+    font-size: 1.1rem;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   ACHIEVEMENTS (v2)
+   ═══════════════════════════════════════════════════════════════════ */
+
+.achievements-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.achievement-tier {
+    background: linear-gradient(135deg, #3a2a1a 0%, #2b1810 100%);
+    border: 2px solid var(--osrs-border);
+    border-radius: 12px;
+    padding: 1rem;
+}
+
+.tier-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.tier-header h3 {
+    margin: 0;
+    color: var(--osrs-gold);
+}
+
+.tier-progress {
+    color: var(--osrs-tan);
+    font-size: 0.9rem;
+}
+
+.tier-achievements {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.achievement {
+    display: flex;
+    gap: 1rem;
+    padding: 0.75rem;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    align-items: center;
+}
+
+.achievement.locked {
+    opacity: 0.5;
+}
+
+.achievement.completed {
+    background: rgba(39, 174, 96, 0.1);
+    border: 1px solid rgba(39, 174, 96, 0.3);
+}
+
+.achievement-icon {
+    font-size: 1.5rem;
+}
+
+.achievement-info {
+    flex: 1;
+}
+
+.achievement-name {
+    display: block;
+    font-weight: bold;
+    color: var(--osrs-gold);
+    margin-bottom: 0.25rem;
+}
+
+.achievement-description {
+    display: block;
+    font-size: 0.85rem;
+    color: var(--osrs-tan);
+    opacity: 0.8;
+}
+
+.achievement-date {
+    display: block;
+    font-size: 0.75rem;
+    color: #27ae60;
+    margin-top: 0.25rem;
+}
+
+.achievement-merit {
+    font-size: 0.8rem;
+    background: var(--osrs-gold);
+    color: #1a1a1a;
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   MODALS (v2 additions)
+   ═══════════════════════════════════════════════════════════════════ */
+
+.level-up-content, .achievement-content {
+    text-align: center;
+    padding: 2rem;
+}
+
+.level-up-banner, .achievement-banner {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: var(--osrs-gold);
+    margin-bottom: 1rem;
+    text-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+}
+
+.level-up-icon, .achievement-unlock-icon {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+}
+
+.level-up-skill {
+    font-size: 1.25rem;
+    color: var(--osrs-tan);
+    margin-bottom: 0.5rem;
+}
+
+.level-up-level {
+    font-size: 2rem;
+    color: var(--osrs-gold);
+    font-weight: bold;
+}
+
+.achievement-unlock-name {
+    font-size: 1.5rem;
+    color: var(--osrs-gold);
+    margin-bottom: 0.5rem;
+}
+
+.achievement-unlock-description {
+    color: var(--osrs-tan);
+    margin-bottom: 1rem;
+}
+
+/* Challenge Templates */
+.challenge-templates {
+    margin-bottom: 1.5rem;
+}
+
+.challenge-templates h3 {
+    margin-bottom: 1rem;
+    color: var(--osrs-tan);
+}
+
+.template-card {
+    display: flex;
+    gap: 1rem;
+    padding: 1rem;
+    background: rgba(255, 255, 255, 0.05);
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    margin-bottom: 0.75rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.template-card:hover {
+    border-color: var(--osrs-gold);
+    background: rgba(255, 215, 0, 0.1);
+}
+
+.template-icon {
+    font-size: 2rem;
+}
+
+.template-info h4 {
+    margin: 0 0 0.25rem 0;
+    color: var(--osrs-gold);
+}
+
+.template-info p {
+    margin: 0;
+    font-size: 0.85rem;
+    color: var(--osrs-tan);
+    opacity: 0.8;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   TOASTS
+   ═══════════════════════════════════════════════════════════════════ */
+
+.toast {
+    position: fixed;
+    bottom: 80px;
+    left: 50%;
+    transform: translateX(-50%) translateY(100px);
+    background: #333;
+    color: white;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    z-index: 10000;
+    opacity: 0;
+    transition: all 0.3s ease;
+}
+
+.toast.show {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+}
+
+.toast-success {
+    background: linear-gradient(135deg, #27ae60 0%, #1e8449 100%);
+}
+
+.toast-error {
+    background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+}
+
+.toast-achievement {
+    background: linear-gradient(135deg, var(--osrs-gold) 0%, #b8860b 100%);
+    color: #1a1a1a;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   FILTER BUTTONS (v2)
+   ═══════════════════════════════════════════════════════════════════ */
+
+.filter-section {
+    margin-bottom: 1rem;
+}
+
+.filter-label {
+    font-size: 0.85rem;
+    color: var(--osrs-tan);
+    margin-bottom: 0.5rem;
+}
+
+.filter-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.path-filters .filter-btn {
+    padding: 0.4rem 0.6rem;
+    font-size: 1.1rem;
+}
+
+.filter-btn {
+    padding: 0.4rem 0.8rem;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 6px;
+    color: var(--osrs-tan);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 0.85rem;
+}
+
+.filter-btn:hover {
+    background: rgba(255, 255, 255, 0.15);
+}
+
+.filter-btn.active {
+    background: var(--osrs-gold);
+    color: #1a1a1a;
+    border-color: var(--osrs-gold);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   SETTINGS VIEW
+   ═══════════════════════════════════════════════════════════════════ */
+
+.settings-section {
+    background: linear-gradient(135deg, #3a2a1a 0%, #2b1810 100%);
+    border: 2px solid var(--osrs-border);
+    border-radius: 12px;
+    padding: 1.25rem;
+    margin-bottom: 1rem;
+}
+
+.settings-section h3 {
+    margin: 0 0 1rem 0;
+    color: var(--osrs-gold);
+}
+
+.settings-section p {
+    color: var(--osrs-tan);
+    margin: 0.5rem 0;
+}
+
+.settings-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+
+.secondary-btn {
+    padding: 0.6rem 1rem;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 6px;
+    color: var(--osrs-tan);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.secondary-btn:hover {
+    background: rgba(255, 255, 255, 0.15);
+}
+
+.danger-btn {
+    padding: 0.6rem 1rem;
+    background: rgba(231, 76, 60, 0.2);
+    border: 1px solid #e74c3c;
+    border-radius: 6px;
+    color: #e74c3c;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.danger-btn:hover {
+    background: rgba(231, 76, 60, 0.3);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   VIEW HEADERS
+   ═══════════════════════════════════════════════════════════════════ */
+
+.view-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.view-header h2 {
+    margin: 0;
+    color: var(--osrs-gold);
+}
+
+.view-subtitle {
+    width: 100%;
+    margin: 0;
+    color: var(--osrs-tan);
+    opacity: 0.8;
+}
+
+.primary-btn {
+    padding: 0.6rem 1.2rem;
+    background: linear-gradient(135deg, var(--osrs-gold) 0%, #b8860b 100%);
+    border: none;
+    border-radius: 6px;
+    color: #1a1a1a;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.primary-btn:hover {
+    transform: scale(1.02);
+    box-shadow: 0 4px 12px rgba(255, 215, 0, 0.3);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   RESPONSIVE
+   ═══════════════════════════════════════════════════════════════════ */
+
+@media (max-width: 600px) {
+    .challenge-stats {
+        grid-template-columns: 1fr;
+    }
+    
+    .form-row {
+        flex-direction: column;
+    }
+    
+    .path-header {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .path-complete-badge {
+        margin: 0.5rem auto 0;
+    }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   COLLECTION LOG
+   ═══════════════════════════════════════════════════════════════════ */
+
+.stats-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+}
+
+.stat-card {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    padding: 0.75rem;
+    text-align: center;
+}
+
+.stat-card .stat-value {
+    display: block;
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: var(--osrs-gold);
+}
+
+.stat-card .stat-label {
+    font-size: 0.75rem;
+    color: var(--osrs-tan);
+    opacity: 0.7;
+}
+
+.collection-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.collection-card {
+    background: linear-gradient(135deg, #3a2a1a 0%, #2b1810 100%);
+    border: 2px solid var(--osrs-border);
+    border-radius: 12px;
+    padding: 1rem;
+    transition: all 0.2s ease;
+}
+
+.collection-card:hover {
+    border-color: var(--osrs-gold);
+}
+
+.collection-card.completed {
+    border-color: #27ae60;
+    background: linear-gradient(135deg, #1a3a1a 0%, #0d2510 100%);
+}
+
+.collection-card.incomplete {
+    border-left: 4px solid #f39c12;
+}
+
+.collection-card-content {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 0.75rem;
+}
+
+.collection-thumbnail {
+    width: 80px;
+    height: 80px;
+    border-radius: 8px;
+    overflow: hidden;
+    flex-shrink: 0;
+    cursor: pointer;
+}
+
+.collection-thumbnail img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.collection-thumbnail.placeholder {
+    background: rgba(255, 255, 255, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    opacity: 0.5;
+}
+
+.collection-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.collection-name {
+    margin: 0 0 0.25rem 0;
+    color: var(--osrs-gold);
+    font-size: 1.1rem;
+}
+
+.collection-description {
+    margin: 0 0 0.5rem 0;
+    color: var(--osrs-tan);
+    opacity: 0.8;
+    font-size: 0.9rem;
+}
+
+.collection-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.collection-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+}
+
+.collection-tags .tag {
+    font-size: 0.7rem;
+    padding: 0.15rem 0.4rem;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    color: var(--osrs-tan);
+}
+
+.target-date, .completed-date {
+    font-size: 0.8rem;
+    color: var(--osrs-tan);
+}
+
+.target-date {
+    color: #f39c12;
+}
+
+.completed-date {
+    color: #27ae60;
+}
+
+.collection-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.collection-actions .view-btn,
+.collection-actions .complete-btn {
+    flex: 1;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    font-weight: bold;
+    transition: all 0.2s ease;
+}
+
+.collection-actions .complete-btn {
+    background: linear-gradient(135deg, var(--osrs-gold) 0%, #b8860b 100%);
+    color: #1a1a1a;
+}
+
+.collection-actions .view-btn {
+    background: rgba(39, 174, 96, 0.2);
+    color: #27ae60;
+    border: 1px solid #27ae60;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   PHOTO GALLERY
+   ═══════════════════════════════════════════════════════════════════ */
+
+.view-divider {
+    margin: 2rem 0 1rem 0;
+    padding-top: 1.5rem;
+    border-top: 2px solid var(--osrs-border);
+}
+
+.view-divider h3 {
+    margin: 0;
+    color: var(--osrs-gold);
+}
+
+.gallery-stats {
+    color: var(--osrs-tan);
+    font-size: 0.85rem;
+    margin-left: auto;
+}
+
+.photo-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 0.75rem;
+}
+
+.photo-card {
+    background: linear-gradient(135deg, #3a2a1a 0%, #2b1810 100%);
+    border: 2px solid var(--osrs-border);
+    border-radius: 8px;
+    overflow: hidden;
+    transition: all 0.2s ease;
+}
+
+.photo-card:hover {
+    border-color: var(--osrs-gold);
+    transform: translateY(-2px);
+}
+
+.photo-image {
+    position: relative;
+    aspect-ratio: 1;
+    cursor: pointer;
+}
+
+.photo-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.photo-overlay {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+}
+
+.photo-type {
+    font-size: 1rem;
+    background: rgba(0, 0, 0, 0.6);
+    padding: 0.2rem 0.4rem;
+    border-radius: 4px;
+}
+
+.photo-info {
+    padding: 0.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+}
+
+.photo-source {
+    font-size: 0.85rem;
+    color: var(--osrs-gold);
+    font-weight: bold;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.photo-date {
+    font-size: 0.7rem;
+    color: var(--osrs-tan);
+    opacity: 0.7;
+}
+
+.photo-paths {
+    font-size: 0.8rem;
+}
+
+.photo-caption {
+    font-size: 0.75rem;
+    color: var(--osrs-tan);
+    margin: 0;
+    padding: 0 0.5rem 0.5rem;
+}
+
+/* Photo Preview in forms */
+.photo-preview {
+    margin-top: 0.5rem;
+    max-height: 200px;
+    overflow: hidden;
+    border-radius: 8px;
+}
+
+.photo-preview img {
+    max-width: 100%;
+    max-height: 200px;
+    object-fit: contain;
+}
+
+/* Photo button on quest cards */
+.photo-btn {
+    padding: 0.5rem;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 1rem;
+}
+
+.photo-btn:hover:not(:disabled) {
+    background: rgba(255, 215, 0, 0.2);
+    border-color: var(--osrs-gold);
+}
+
+.photo-btn:disabled {
+    opacity: 0.3;
+    cursor: default;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   LIGHTBOX MODAL
+   ═══════════════════════════════════════════════════════════════════ */
+
+.lightbox-modal .lightbox-content {
+    max-width: 90vw;
+    max-height: 90vh;
+    background: #1a1a1a;
+    border-radius: 12px;
+    overflow: hidden;
+    position: relative;
+}
+
+.lightbox-close {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    background: rgba(0, 0, 0, 0.6);
+    border: none;
+    color: white;
+    font-size: 1.5rem;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    cursor: pointer;
+    z-index: 10;
+}
+
+.lightbox-content img {
+    max-width: 100%;
+    max-height: 70vh;
+    display: block;
+    margin: 0 auto;
+}
+
+.lightbox-info {
+    padding: 1rem;
+    text-align: center;
+}
+
+.lightbox-info span {
+    color: var(--osrs-gold);
+    font-weight: bold;
+}
+
+.lightbox-info p {
+    color: var(--osrs-tan);
+    margin: 0.5rem 0 0 0;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   RESPONSIVE - COLLECTION & GALLERY
+   ═══════════════════════════════════════════════════════════════════ */
+
+@media (max-width: 600px) {
+    .stats-row {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .collection-card-content {
+        flex-direction: column;
+    }
+    
+    .collection-thumbnail {
+        width: 100%;
+        height: 150px;
+    }
+    
+    .photo-grid {
+        grid-template-columns: repeat(2, 1fr);
     }
 }
