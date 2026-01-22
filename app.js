@@ -11,9 +11,14 @@ class LifeRPG {
         this.currentTypeFilter = 'all';
         this.currentPathFilter = 'all';
         this.loadData();
+        this.initSoundSystem();
         this.setupEventListeners();
         this.checkResets();
+        this.checkLoginStreak();
+        this.checkComebackBonus();
         this.renderAll();
+        this.updateProgressRings();
+        this.checkSkillDecayWarnings();
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -34,6 +39,284 @@ class LifeRPG {
             level++;
         }
         return level;
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // SOUND & HAPTIC SYSTEM
+    // ═══════════════════════════════════════════════════════════════
+
+    initSoundSystem() {
+        this.audioContext = null;
+        this.soundEnabled = this.data?.settings?.soundEnabled ?? true;
+        
+        // Initialize on first user interaction
+        document.addEventListener('click', () => {
+            if (!this.audioContext) {
+                this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            }
+        }, { once: true });
+    }
+
+    playSound(type) {
+        if (!this.soundEnabled || !this.audioContext) return;
+        
+        const ctx = this.audioContext;
+        const now = ctx.currentTime;
+        
+        switch(type) {
+            case 'complete':
+                // Satisfying "ding" - two quick ascending notes
+                this.playTone(ctx, 800, now, 0.1, 0.3);
+                this.playTone(ctx, 1200, now + 0.1, 0.15, 0.3);
+                break;
+            case 'levelUp':
+                // Fanfare - ascending arpeggio
+                this.playTone(ctx, 523, now, 0.15, 0.4);        // C
+                this.playTone(ctx, 659, now + 0.15, 0.15, 0.4); // E
+                this.playTone(ctx, 784, now + 0.3, 0.15, 0.4);  // G
+                this.playTone(ctx, 1047, now + 0.45, 0.3, 0.5); // C (octave)
+                break;
+            case 'achievement':
+                // Grand achievement sound
+                this.playTone(ctx, 440, now, 0.1, 0.3);
+                this.playTone(ctx, 554, now + 0.1, 0.1, 0.3);
+                this.playTone(ctx, 659, now + 0.2, 0.1, 0.3);
+                this.playTone(ctx, 880, now + 0.3, 0.4, 0.5);
+                break;
+            case 'undo':
+                // Descending tone
+                this.playTone(ctx, 600, now, 0.15, 0.2);
+                this.playTone(ctx, 400, now + 0.15, 0.15, 0.2);
+                break;
+            case 'error':
+                // Low buzz
+                this.playTone(ctx, 200, now, 0.2, 0.3, 'square');
+                break;
+        }
+    }
+
+    playTone(ctx, frequency, startTime, duration, volume = 0.3, type = 'sine') {
+        const oscillator = ctx.createOscillator();
+        const gainNode = ctx.createGain();
+        
+        oscillator.connect(gainNode);
+        gainNode.connect(ctx.destination);
+        
+        oscillator.frequency.value = frequency;
+        oscillator.type = type;
+        
+        gainNode.gain.setValueAtTime(volume, startTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, startTime + duration);
+        
+        oscillator.start(startTime);
+        oscillator.stop(startTime + duration);
+    }
+
+    triggerHaptic(type = 'light') {
+        if (!navigator.vibrate) return;
+        
+        switch(type) {
+            case 'light':
+                navigator.vibrate(10);
+                break;
+            case 'medium':
+                navigator.vibrate(25);
+                break;
+            case 'success':
+                navigator.vibrate([10, 50, 20]);
+                break;
+            case 'levelUp':
+                navigator.vibrate([20, 30, 20, 30, 50]);
+                break;
+            case 'error':
+                navigator.vibrate([50, 30, 50]);
+                break;
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // LOGIN STREAK & COMEBACK BONUS
+    // ═══════════════════════════════════════════════════════════════
+
+    checkLoginStreak() {
+        const today = new Date().toDateString();
+        const lastLogin = this.data.loginStreak?.lastLoginDate;
+        
+        if (!this.data.loginStreak) {
+            this.data.loginStreak = {
+                current: 1,
+                longest: 1,
+                lastLoginDate: today,
+                totalLogins: 1,
+                streakProtectionUsed: 0,
+                streakProtectionWeekStart: this.getStartOfWeek(new Date()).toISOString()
+            };
+            this.awardLoginBonus(true);
+            this.saveData();
+            return;
+        }
+
+        if (lastLogin === today) {
+            // Already logged in today
+            return;
+        }
+
+        const lastLoginDate = new Date(lastLogin);
+        const yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+        const twoDaysAgo = new Date();
+        twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
+
+        // Reset weekly streak protection
+        const weekStart = this.getStartOfWeek(new Date());
+        if (new Date(this.data.loginStreak.streakProtectionWeekStart) < weekStart) {
+            this.data.loginStreak.streakProtectionUsed = 0;
+            this.data.loginStreak.streakProtectionWeekStart = weekStart.toISOString();
+        }
+
+        if (lastLoginDate.toDateString() === yesterday.toDateString()) {
+            // Consecutive day - extend streak
+            this.data.loginStreak.current++;
+            this.data.loginStreak.longest = Math.max(
+                this.data.loginStreak.longest, 
+                this.data.loginStreak.current
+            );
+            this.awardLoginBonus(false);
+        } else if (lastLoginDate.toDateString() === twoDaysAgo.toDateString() && 
+                   this.data.loginStreak.streakProtectionUsed < 1) {
+            // Missed one day - use streak protection
+            this.data.loginStreak.streakProtectionUsed++;
+            this.data.loginStreak.current++; // Still extend the streak
+            this.showToast('🛡️ Streak Protection used! Streak saved!', 'success');
+            this.awardLoginBonus(false);
+        } else {
+            // Streak broken
+            const oldStreak = this.data.loginStreak.current;
+            this.data.loginStreak.current = 1;
+            if (oldStreak > 3) {
+                this.showToast(`Streak of ${oldStreak} days ended. Starting fresh!`, 'info');
+            }
+            this.awardLoginBonus(true);
+        }
+
+        this.data.loginStreak.lastLoginDate = today;
+        this.data.loginStreak.totalLogins++;
+        this.saveData();
+        
+        // Show streak protection availability
+        this.updateStreakProtectionBanner();
+    }
+
+    awardLoginBonus(isNewStreak) {
+        const streak = this.data.loginStreak?.current || 1;
+        let bonusXP = 10; // Base login bonus
+        
+        // Streak multiplier
+        if (streak >= 7) bonusXP = 50;
+        else if (streak >= 3) bonusXP = 25;
+        else if (streak >= 2) bonusXP = 15;
+
+        // Apply comeback bonus if active
+        if (this.data.comebackBonus?.active) {
+            bonusXP = Math.floor(bonusXP * this.data.comebackBonus.multiplier);
+        }
+
+        // Award to a random skill or spread across all
+        const skills = Object.keys(this.data.skills);
+        const randomSkill = skills[Math.floor(Math.random() * skills.length)];
+        this.data.skills[randomSkill].xp += bonusXP;
+
+        const message = isNewStreak 
+            ? `Welcome! +${bonusXP} XP login bonus to ${this.getSkillName(randomSkill)}!`
+            : `🔥 ${streak} day streak! +${bonusXP} XP to ${this.getSkillName(randomSkill)}!`;
+        
+        setTimeout(() => {
+            this.showToast(message, 'success');
+            this.playSound('complete');
+            this.triggerHaptic('success');
+        }, 500);
+    }
+
+    checkComebackBonus() {
+        if (!this.data.loginStreak) return;
+        
+        const lastLogin = new Date(this.data.loginStreak.lastLoginDate);
+        const today = new Date();
+        const daysMissed = Math.floor((today - lastLogin) / (1000 * 60 * 60 * 24));
+
+        if (daysMissed >= 3 && daysMissed <= 14) {
+            // Activate comeback bonus
+            let multiplier = 1.5;
+            if (daysMissed >= 7) multiplier = 2.0;
+            
+            this.data.comebackBonus = {
+                active: true,
+                multiplier: multiplier,
+                expiresAt: new Date(today.getTime() + 24 * 60 * 60 * 1000).toISOString()
+            };
+            
+            document.getElementById('comeback-bonus-banner').style.display = 'block';
+            document.getElementById('comeback-multiplier').textContent = multiplier + 'x';
+        } else if (this.data.comebackBonus?.active) {
+            // Check if bonus expired
+            if (new Date(this.data.comebackBonus.expiresAt) < today) {
+                this.data.comebackBonus.active = false;
+            } else {
+                document.getElementById('comeback-bonus-banner').style.display = 'block';
+                document.getElementById('comeback-multiplier').textContent = 
+                    this.data.comebackBonus.multiplier + 'x';
+            }
+        }
+    }
+
+    updateStreakProtectionBanner() {
+        const banner = document.getElementById('streak-protection-banner');
+        const countEl = document.getElementById('protection-count');
+        
+        if (banner && this.data.loginStreak) {
+            const remaining = 1 - (this.data.loginStreak.streakProtectionUsed || 0);
+            if (remaining > 0 && this.data.loginStreak.current >= 3) {
+                banner.style.display = 'block';
+                countEl.textContent = remaining;
+            } else {
+                banner.style.display = 'none';
+            }
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // SKILL DECAY WARNINGS
+    // ═══════════════════════════════════════════════════════════════
+
+    checkSkillDecayWarnings() {
+        const today = new Date();
+        const warnings = [];
+
+        Object.entries(this.data.skills).forEach(([skillId, skill]) => {
+            if (skill.currentStreak >= 3 && skill.lastAwardedDate) {
+                const lastDate = new Date(skill.lastAwardedDate);
+                const daysSince = Math.floor((today - lastDate) / (1000 * 60 * 60 * 24));
+                
+                if (daysSince === 1) {
+                    warnings.push({
+                        skill: skillId,
+                        streak: skill.currentStreak,
+                        message: `${this.getSkillEmoji(skillId)} ${this.getSkillName(skillId)} streak at risk!`
+                    });
+                }
+            }
+        });
+
+        // Show warning for skills at risk
+        if (warnings.length > 0) {
+            setTimeout(() => {
+                warnings.forEach((w, i) => {
+                    setTimeout(() => {
+                        this.showToast(w.message, 'warning');
+                    }, i * 1500);
+                });
+            }, 2000);
+        }
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -107,384 +390,210 @@ class LifeRPG {
 
     getDefaultQuests() {
         return [
-            // ─── DAILY QUESTS ───────────────────────────────────────
-            { 
-                id: 'run', 
-                name: 'Go for a run', 
-                frequency: 'daily',
-                rewards: [{ skill: 'athleticism', xp: 50 }],
-                challengeId: null,
-                custom: false,
-                active: true
-            },
-            { 
-                id: 'workout', 
-                name: 'Strength training', 
-                frequency: 'daily',
-                rewards: [{ skill: 'athleticism', xp: 50 }],
-                challengeId: null,
-                custom: false,
-                active: true
-            },
-            { 
-                id: 'yoga', 
-                name: 'Yoga/Stretching', 
-                frequency: 'daily',
-                rewards: [{ skill: 'athleticism', xp: 20 }, { skill: 'innerPeace', xp: 15 }],
-                challengeId: null,
-                custom: false,
-                active: true
-            },
-            { 
-                id: 'cross_stitch', 
-                name: 'Cross stitch (30+ min)', 
-                frequency: 'daily',
-                rewards: [{ skill: 'artistry', xp: 35 }],
-                challengeId: null,
-                custom: false,
-                active: true
-            },
-            { 
-                id: 'cook_meal', 
-                name: 'Cook a meal', 
-                frequency: 'daily',
-                rewards: [{ skill: 'culinary', xp: 30 }],
-                challengeId: null,
-                custom: false,
-                active: true
-            },
-            { 
-                id: 'dev_work', 
-                name: 'Moonshot Dev work (1+ hr)', 
-                frequency: 'daily',
-                rewards: [{ skill: 'business', xp: 50 }],
-                challengeId: null,
-                custom: false,
-                active: true
-            },
-            { 
-                id: 'quality_time', 
-                name: 'Quality time with Scott', 
-                frequency: 'daily',
-                rewards: [{ skill: 'partnership', xp: 40 }],
-                challengeId: null,
-                custom: false,
-                active: true
-            },
-            { 
-                id: 'phone_free', 
-                name: 'Phone-free hour', 
-                frequency: 'daily',
-                rewards: [{ skill: 'innerPeace', xp: 25 }],
-                challengeId: null,
-                custom: false,
-                active: true
-            },
-            { 
-                id: 'read', 
-                name: 'Read (30+ min)', 
-                frequency: 'daily',
-                rewards: [{ skill: 'innerPeace', xp: 30 }],
-                challengeId: null,
-                custom: false,
-                active: true
-            },
-            { 
-                id: 'journal', 
-                name: 'Journal (15+ min)', 
-                frequency: 'daily',
-                rewards: [{ skill: 'innerPeace', xp: 25 }],
-                challengeId: null,
-                custom: false,
-                active: true
-            },
+            // ═══════════════════════════════════════════════════════════════
+            // DAILY QUESTS
+            // ═══════════════════════════════════════════════════════════════
+            
+            // Athleticism
+            { id: 'run', name: 'Go for a run', frequency: 'daily', rewards: [{ skill: 'athleticism', xp: 50 }], challengeId: null, custom: false, active: true },
+            { id: 'workout', name: 'Strength training', frequency: 'daily', rewards: [{ skill: 'athleticism', xp: 50 }], challengeId: null, custom: false, active: true },
+            { id: 'yoga', name: 'Yoga/Stretching', frequency: 'daily', rewards: [{ skill: 'athleticism', xp: 20 }, { skill: 'innerPeace', xp: 15 }], challengeId: null, custom: false, active: true },
+            { id: 'walk_10k', name: 'Walk 10,000 steps', frequency: 'daily', rewards: [{ skill: 'athleticism', xp: 30 }], challengeId: null, custom: false, active: true },
+            
+            // Culinary
+            { id: 'cook_meal', name: 'Cook a meal', frequency: 'daily', rewards: [{ skill: 'culinary', xp: 30 }], challengeId: null, custom: false, active: true },
+            { id: 'healthy_breakfast', name: 'Make a healthy breakfast', frequency: 'daily', rewards: [{ skill: 'culinary', xp: 20 }, { skill: 'athleticism', xp: 10 }], challengeId: null, custom: false, active: true },
+            
+            // Artistry
+            { id: 'cross_stitch', name: 'Cross stitch (30+ min)', frequency: 'daily', rewards: [{ skill: 'artistry', xp: 35 }], challengeId: null, custom: false, active: true },
+            { id: 'sketch', name: 'Sketch or doodle', frequency: 'daily', rewards: [{ skill: 'artistry', xp: 25 }], challengeId: null, custom: false, active: true },
+            
+            // Business
+            { id: 'dev_work', name: 'Moonshot Dev work (1+ hr)', frequency: 'daily', rewards: [{ skill: 'business', xp: 50 }], challengeId: null, custom: false, active: true },
+            { id: 'email_inbox', name: 'Process email inbox to zero', frequency: 'daily', rewards: [{ skill: 'business', xp: 15 }], challengeId: null, custom: false, active: true },
+            
+            // Partnership
+            { id: 'quality_time', name: 'Quality time with Scott', frequency: 'daily', rewards: [{ skill: 'partnership', xp: 40 }], challengeId: null, custom: false, active: true },
+            { id: 'check_in', name: 'Meaningful check-in conversation', frequency: 'daily', rewards: [{ skill: 'partnership', xp: 25 }], challengeId: null, custom: false, active: true },
+            
+            // Friendships
+            { id: 'text_friend', name: 'Text/call a friend', frequency: 'daily', rewards: [{ skill: 'friendships', xp: 20 }], challengeId: null, custom: false, active: true },
+            
+            // Inner Peace
+            { id: 'phone_free', name: 'Phone-free hour', frequency: 'daily', rewards: [{ skill: 'innerPeace', xp: 25 }], challengeId: null, custom: false, active: true },
+            { id: 'read', name: 'Read (30+ min)', frequency: 'daily', rewards: [{ skill: 'innerPeace', xp: 30 }], challengeId: null, custom: false, active: true },
+            { id: 'journal', name: 'Journal (15+ min)', frequency: 'daily', rewards: [{ skill: 'innerPeace', xp: 25 }], challengeId: null, custom: false, active: true },
+            { id: 'meditate', name: 'Meditate (10+ min)', frequency: 'daily', rewards: [{ skill: 'innerPeace', xp: 30 }], challengeId: null, custom: false, active: true },
+            { id: 'gratitude', name: 'Write 3 gratitudes', frequency: 'daily', rewards: [{ skill: 'innerPeace', xp: 15 }], challengeId: null, custom: false, active: true },
+            
+            // Home Craft
+            { id: 'tidy_space', name: 'Tidy living space', frequency: 'daily', rewards: [{ skill: 'homeCraft', xp: 20 }], challengeId: null, custom: false, active: true },
+            
+            // Influence
+            { id: 'social_post', name: 'Post on social media', frequency: 'daily', rewards: [{ skill: 'influence', xp: 25 }], challengeId: null, custom: false, active: true },
+            { id: 'engage_comments', name: 'Engage with comments/DMs', frequency: 'daily', rewards: [{ skill: 'influence', xp: 15 }, { skill: 'friendships', xp: 10 }], challengeId: null, custom: false, active: true },
 
-            // ─── WEEKLY QUESTS ──────────────────────────────────────
-            { 
-                id: 'run_5k', 
-                name: 'Complete a 5K run', 
-                frequency: 'weekly',
-                rewards: [{ skill: 'athleticism', xp: 150 }],
-                challengeId: null,
-                custom: false,
-                active: true
-            },
-            { 
-                id: 'date_night', 
-                name: 'Date night with Scott', 
-                frequency: 'weekly',
-                rewards: [{ skill: 'partnership', xp: 75 }],
-                challengeId: null,
-                custom: false,
-                active: true
-            },
-            { 
-                id: 'reno_task', 
-                name: 'Home renovation task', 
-                frequency: 'weekly',
-                rewards: [{ skill: 'homeCraft', xp: 60 }],
-                challengeId: null,
-                custom: false,
-                active: true
-            },
-            { 
-                id: 'meal_prep', 
-                name: 'Meal prep for the week', 
-                frequency: 'weekly',
-                rewards: [{ skill: 'culinary', xp: 50 }],
-                challengeId: null,
-                custom: false,
-                active: true
-            },
-            { 
-                id: 'social', 
-                name: 'Hang with friends', 
-                frequency: 'weekly',
-                rewards: [{ skill: 'friendships', xp: 60 }],
-                challengeId: null,
-                custom: false,
-                active: true
-            },
-            { 
-                id: 'content_create', 
-                name: 'Create content for social media', 
-                frequency: 'weekly',
-                rewards: [{ skill: 'influence', xp: 40 }, { skill: 'artistry', xp: 20 }],
-                challengeId: null,
-                custom: false,
-                active: true
-            },
-            { 
-                id: 'deep_clean', 
-                name: 'Deep clean a room', 
-                frequency: 'weekly',
-                rewards: [{ skill: 'homeCraft', xp: 40 }],
-                challengeId: null,
-                custom: false,
-                active: true
-            },
+            // ═══════════════════════════════════════════════════════════════
+            // WEEKLY QUESTS
+            // ═══════════════════════════════════════════════════════════════
+            
+            // Athleticism
+            { id: 'run_5k', name: 'Complete a 5K run', frequency: 'weekly', rewards: [{ skill: 'athleticism', xp: 150 }], challengeId: null, custom: false, active: true },
+            { id: 'fitness_new_class', name: 'Try a new fitness class', frequency: 'weekly', rewards: [{ skill: 'athleticism', xp: 75 }], challengeId: null, custom: false, active: true },
+            
+            // Culinary
+            { id: 'meal_prep', name: 'Meal prep for the week', frequency: 'weekly', rewards: [{ skill: 'culinary', xp: 50 }], challengeId: null, custom: false, active: true },
+            { id: 'fancy_dinner', name: 'Cook a fancy dinner', frequency: 'weekly', rewards: [{ skill: 'culinary', xp: 60 }], challengeId: null, custom: false, active: true },
+            
+            // Partnership
+            { id: 'date_night', name: 'Date night with Scott', frequency: 'weekly', rewards: [{ skill: 'partnership', xp: 75 }], challengeId: null, custom: false, active: true },
+            
+            // Friendships
+            { id: 'social', name: 'Hang with friends', frequency: 'weekly', rewards: [{ skill: 'friendships', xp: 60 }], challengeId: null, custom: false, active: true },
+            { id: 'friend_date', name: 'One-on-one friend hangout', frequency: 'weekly', rewards: [{ skill: 'friendships', xp: 75 }], challengeId: null, custom: false, active: true },
+            
+            // Home Craft
+            { id: 'reno_task', name: 'Home renovation task', frequency: 'weekly', rewards: [{ skill: 'homeCraft', xp: 60 }], challengeId: null, custom: false, active: true },
+            { id: 'deep_clean', name: 'Deep clean a room', frequency: 'weekly', rewards: [{ skill: 'homeCraft', xp: 40 }], challengeId: null, custom: false, active: true },
+            
+            // Influence
+            { id: 'content_create', name: 'Create content for social media', frequency: 'weekly', rewards: [{ skill: 'influence', xp: 40 }, { skill: 'artistry', xp: 20 }], challengeId: null, custom: false, active: true },
+            { id: 'content_plan', name: 'Plan content calendar', frequency: 'weekly', rewards: [{ skill: 'influence', xp: 30 }, { skill: 'business', xp: 20 }], challengeId: null, custom: false, active: true },
+            
+            // Generosity
+            { id: 'help_someone', name: 'Help someone in need', frequency: 'weekly', rewards: [{ skill: 'generosity', xp: 50 }], challengeId: null, custom: false, active: true },
 
-            // ─── MONTHLY QUESTS ─────────────────────────────────────
-            { 
-                id: 'new_recipe', 
-                name: 'Master a new recipe', 
-                frequency: 'monthly',
-                rewards: [{ skill: 'culinary', xp: 100 }],
-                challengeId: null,
-                custom: false,
-                active: true
-            },
-            { 
-                id: 'art_project', 
-                name: 'Complete a major art project', 
-                frequency: 'monthly',
-                rewards: [{ skill: 'artistry', xp: 150 }],
-                challengeId: null,
-                custom: false,
-                active: true
-            },
-            { 
-                id: 'fitness_milestone', 
-                name: 'Hit a fitness milestone', 
-                frequency: 'monthly',
-                rewards: [{ skill: 'athleticism', xp: 150 }],
-                challengeId: null,
-                custom: false,
-                active: true
-            },
-            { 
-                id: 'volunteer', 
-                name: 'Volunteer or give back', 
-                frequency: 'monthly',
-                rewards: [{ skill: 'generosity', xp: 100 }],
-                challengeId: null,
-                custom: false,
-                active: true
-            },
+            // ═══════════════════════════════════════════════════════════════
+            // MONTHLY QUESTS
+            // ═══════════════════════════════════════════════════════════════
+            
+            // Athleticism
+            { id: 'fitness_milestone', name: 'Hit a fitness milestone', frequency: 'monthly', rewards: [{ skill: 'athleticism', xp: 150 }], challengeId: null, custom: false, active: true },
+            { id: 'fit_pr', name: 'Set a personal record', frequency: 'monthly', rewards: [{ skill: 'athleticism', xp: 100 }], challengeId: null, custom: false, active: true },
+            { id: 'fit_challenge', name: 'Complete a fitness challenge', frequency: 'monthly', rewards: [{ skill: 'athleticism', xp: 75 }], challengeId: null, custom: false, active: true },
+            
+            // Culinary
+            { id: 'new_recipe', name: 'Master a new recipe', frequency: 'monthly', rewards: [{ skill: 'culinary', xp: 100 }], challengeId: null, custom: false, active: true },
+            { id: 'cul_cuisine', name: 'Cook a cuisine you\'ve never tried', frequency: 'monthly', rewards: [{ skill: 'culinary', xp: 75 }], challengeId: null, custom: false, active: true },
+            { id: 'cul_dinner_party', name: 'Host a dinner for friends', frequency: 'monthly', rewards: [{ skill: 'culinary', xp: 50 }, { skill: 'friendships', xp: 50 }], challengeId: null, custom: false, active: true },
+            { id: 'cul_signature', name: 'Perfect a signature dish', frequency: 'monthly', rewards: [{ skill: 'culinary', xp: 100 }], challengeId: null, custom: false, active: true },
+            
+            // Artistry
+            { id: 'art_project', name: 'Complete a major art project', frequency: 'monthly', rewards: [{ skill: 'artistry', xp: 150 }], challengeId: null, custom: false, active: true },
+            { id: 'art_new_medium', name: 'Try a new artistic medium', frequency: 'monthly', rewards: [{ skill: 'artistry', xp: 75 }], challengeId: null, custom: false, active: true },
+            { id: 'art_share', name: 'Share your art publicly', frequency: 'monthly', rewards: [{ skill: 'artistry', xp: 40 }, { skill: 'influence', xp: 35 }], challengeId: null, custom: false, active: true },
+            { id: 'art_gallery', name: 'Visit a gallery/museum', frequency: 'monthly', rewards: [{ skill: 'artistry', xp: 50 }, { skill: 'innerPeace', xp: 25 }], challengeId: null, custom: false, active: true },
+            
+            // Business
+            { id: 'ent_deep_work', name: 'Deep work session (2+ hrs)', frequency: 'monthly', rewards: [{ skill: 'business', xp: 75 }], challengeId: null, custom: false, active: true },
+            { id: 'ent_learn', name: 'Learn new business skill', frequency: 'monthly', rewards: [{ skill: 'business', xp: 50 }], challengeId: null, custom: false, active: true },
+            { id: 'biz_revenue', name: 'Generate business revenue', frequency: 'monthly', rewards: [{ skill: 'business', xp: 200 }], challengeId: null, custom: false, active: true },
+            
+            // Partnership
+            { id: 'love_surprise', name: 'Surprise Scott with something thoughtful', frequency: 'monthly', rewards: [{ skill: 'partnership', xp: 75 }], challengeId: null, custom: false, active: true },
+            { id: 'love_adventure', name: 'Try something new together', frequency: 'monthly', rewards: [{ skill: 'partnership', xp: 50 }, { skill: 'friendships', xp: 25 }], challengeId: null, custom: false, active: true },
+            { id: 'love_letter', name: 'Write a love letter', frequency: 'monthly', rewards: [{ skill: 'partnership', xp: 60 }], challengeId: null, custom: false, active: true },
+            
+            // Friendships  
+            { id: 'friend_event', name: 'Plan a friend gathering', frequency: 'monthly', rewards: [{ skill: 'friendships', xp: 100 }], challengeId: null, custom: false, active: true },
+            { id: 'reconnect', name: 'Reconnect with old friend', frequency: 'monthly', rewards: [{ skill: 'friendships', xp: 75 }], challengeId: null, custom: false, active: true },
+            
+            // Inner Peace
+            { id: 'soul_retreat', name: 'Mini retreat day (phone-free)', frequency: 'monthly', rewards: [{ skill: 'innerPeace', xp: 100 }], challengeId: null, custom: false, active: true },
+            { id: 'soul_meditation', name: 'Complete 10 meditation sessions', frequency: 'monthly', rewards: [{ skill: 'innerPeace', xp: 75 }], challengeId: null, custom: false, active: true },
+            { id: 'soul_workshop', name: 'Attend a personal growth workshop', frequency: 'monthly', rewards: [{ skill: 'innerPeace', xp: 100 }], challengeId: null, custom: false, active: true },
+            
+            // Home Craft
+            { id: 'garden_project', name: 'Complete a home improvement project', frequency: 'monthly', rewards: [{ skill: 'homeCraft', xp: 100 }], challengeId: null, custom: false, active: true },
+            { id: 'garden_organize', name: 'Organize/beautify a space', frequency: 'monthly', rewards: [{ skill: 'homeCraft', xp: 50 }, { skill: 'innerPeace', xp: 25 }], challengeId: null, custom: false, active: true },
+            { id: 'home_decor', name: 'Add new decor element', frequency: 'monthly', rewards: [{ skill: 'homeCraft', xp: 60 }, { skill: 'artistry', xp: 30 }], challengeId: null, custom: false, active: true },
+            
+            // Generosity
+            { id: 'volunteer', name: 'Volunteer or give back', frequency: 'monthly', rewards: [{ skill: 'generosity', xp: 100 }], challengeId: null, custom: false, active: true },
+            { id: 'saint_cause', name: 'Support a cause you believe in', frequency: 'monthly', rewards: [{ skill: 'generosity', xp: 75 }], challengeId: null, custom: false, active: true },
+            { id: 'saint_mentor', name: 'Help someone with their goals', frequency: 'monthly', rewards: [{ skill: 'generosity', xp: 50 }, { skill: 'friendships', xp: 25 }], challengeId: null, custom: false, active: true },
+            
+            // Influence
+            { id: 'inf_viral', name: 'Create standout content piece', frequency: 'monthly', rewards: [{ skill: 'influence', xp: 75 }, { skill: 'artistry', xp: 25 }], challengeId: null, custom: false, active: true },
+            { id: 'inf_engage', name: 'Engage with your community', frequency: 'monthly', rewards: [{ skill: 'influence', xp: 50 }, { skill: 'friendships', xp: 25 }], challengeId: null, custom: false, active: true },
+            { id: 'inf_collab', name: 'Collaborate with another creator', frequency: 'monthly', rewards: [{ skill: 'influence', xp: 100 }, { skill: 'friendships', xp: 50 }], challengeId: null, custom: false, active: true },
 
-            // ─── AS-NEEDED QUESTS ───────────────────────────────────
-            { 
-                id: 'home_repair', 
-                name: 'Home repair/maintenance', 
-                frequency: 'as-needed',
-                rewards: [{ skill: 'homeCraft', xp: 50 }],
-                challengeId: null,
-                custom: false,
-                active: true
-            },
-            { 
-                id: 'declutter', 
-                name: 'Declutter a space', 
-                frequency: 'as-needed',
-                rewards: [{ skill: 'homeCraft', xp: 35 }, { skill: 'innerPeace', xp: 15 }],
-                challengeId: null,
-                custom: false,
-                active: true
-            },
-            { 
-                id: 'fitness_new_class', 
-                name: 'Try a new fitness class', 
-                frequency: 'as-needed',
-                rewards: [{ skill: 'athleticism', xp: 50 }],
-                challengeId: null,
-                custom: false,
-                active: true
-            },
-            { 
-                id: 'culinary_experiment', 
-                name: 'Try a new cooking technique', 
-                frequency: 'as-needed',
-                rewards: [{ skill: 'culinary', xp: 45 }],
-                challengeId: null,
-                custom: false,
-                active: true
-            },
-            { 
-                id: 'art_learn', 
-                name: 'Learn a new art technique', 
-                frequency: 'as-needed',
-                rewards: [{ skill: 'artistry', xp: 50 }],
-                challengeId: null,
-                custom: false,
-                active: true
-            },
-            { 
-                id: 'random_kindness', 
-                name: 'Random act of kindness', 
-                frequency: 'as-needed',
-                rewards: [{ skill: 'generosity', xp: 40 }],
-                challengeId: null,
-                custom: false,
-                active: true
-            },
-            { 
-                id: 'donate', 
-                name: 'Donate items or money', 
-                frequency: 'as-needed',
-                rewards: [{ skill: 'generosity', xp: 50 }],
-                challengeId: null,
-                custom: false,
-                active: true
-            },
-            { 
-                id: 'garden_work', 
-                name: 'Gardening/yard work', 
-                frequency: 'as-needed',
-                rewards: [{ skill: 'homeCraft', xp: 40 }, { skill: 'innerPeace', xp: 10 }],
-                challengeId: null,
-                custom: false,
-                active: true
-            },
+            // ═══════════════════════════════════════════════════════════════
+            // AS-NEEDED QUESTS
+            // ═══════════════════════════════════════════════════════════════
+            
+            { id: 'home_repair', name: 'Home repair/maintenance', frequency: 'as-needed', rewards: [{ skill: 'homeCraft', xp: 50 }], challengeId: null, custom: false, active: true },
+            { id: 'declutter', name: 'Declutter a space', frequency: 'as-needed', rewards: [{ skill: 'homeCraft', xp: 35 }, { skill: 'innerPeace', xp: 15 }], challengeId: null, custom: false, active: true },
+            { id: 'culinary_experiment', name: 'Try a new cooking technique', frequency: 'as-needed', rewards: [{ skill: 'culinary', xp: 45 }], challengeId: null, custom: false, active: true },
+            { id: 'art_learn', name: 'Learn a new art technique', frequency: 'as-needed', rewards: [{ skill: 'artistry', xp: 50 }], challengeId: null, custom: false, active: true },
+            { id: 'random_kindness', name: 'Random act of kindness', frequency: 'as-needed', rewards: [{ skill: 'generosity', xp: 40 }], challengeId: null, custom: false, active: true },
+            { id: 'donate', name: 'Donate items or money', frequency: 'as-needed', rewards: [{ skill: 'generosity', xp: 50 }], challengeId: null, custom: false, active: true },
+            { id: 'garden_work', name: 'Gardening/yard work', frequency: 'as-needed', rewards: [{ skill: 'homeCraft', xp: 40 }, { skill: 'innerPeace', xp: 10 }], challengeId: null, custom: false, active: true },
+            { id: 'learn_skill', name: 'Learn something new', frequency: 'as-needed', rewards: [{ skill: 'business', xp: 40 }, { skill: 'innerPeace', xp: 20 }], challengeId: null, custom: false, active: true },
+            { id: 'photo_shoot', name: 'Content photo shoot', frequency: 'as-needed', rewards: [{ skill: 'influence', xp: 50 }, { skill: 'artistry', xp: 25 }], challengeId: null, custom: false, active: true },
 
-            // ─── ONE-TIME QUESTS (Entrepreneur Path) ────────────────
-            { 
-                id: 'biz_research', 
-                name: 'Market research for plugin ideas', 
-                frequency: 'one-time',
-                rewards: [{ skill: 'business', xp: 40 }],
-                challengeId: null,
-                custom: false,
-                active: true
-            },
-            { 
-                id: 'biz_design', 
-                name: 'Design business website mockup', 
-                frequency: 'one-time',
-                rewards: [{ skill: 'business', xp: 30 }, { skill: 'artistry', xp: 30 }],
-                challengeId: null,
-                custom: false,
-                active: true
-            },
-            { 
-                id: 'biz_brand', 
-                name: 'Create brand assets (logo, colors)', 
-                frequency: 'one-time',
-                rewards: [{ skill: 'artistry', xp: 40 }, { skill: 'business', xp: 30 }],
-                challengeId: null,
-                custom: false,
-                active: true
-            },
-            { 
-                id: 'biz_website_dev', 
-                name: 'Build Moonshot Dev website', 
-                frequency: 'one-time',
-                rewards: [{ skill: 'business', xp: 100 }],
-                challengeId: null,
-                custom: false,
-                active: true
-            },
-            { 
-                id: 'biz_plugin_plan', 
-                name: 'Plan first plugin features', 
-                frequency: 'one-time',
-                rewards: [{ skill: 'business', xp: 50 }],
-                challengeId: null,
-                custom: false,
-                active: true
-            },
-            { 
-                id: 'biz_plugin_dev', 
-                name: 'Develop plugin core functionality', 
-                frequency: 'one-time',
-                rewards: [{ skill: 'business', xp: 150 }],
-                challengeId: null,
-                custom: false,
-                active: true
-            },
-            { 
-                id: 'biz_plugin_polish', 
-                name: 'Polish plugin UI/UX', 
-                frequency: 'one-time',
-                rewards: [{ skill: 'artistry', xp: 50 }, { skill: 'business', xp: 30 }],
-                challengeId: null,
-                custom: false,
-                active: true
-            },
-            { 
-                id: 'biz_docs', 
-                name: 'Write plugin documentation', 
-                frequency: 'one-time',
-                rewards: [{ skill: 'business', xp: 60 }],
-                challengeId: null,
-                custom: false,
-                active: true
-            },
-            { 
-                id: 'biz_marketing_plan', 
-                name: 'Create marketing strategy', 
-                frequency: 'one-time',
-                rewards: [{ skill: 'business', xp: 40 }, { skill: 'influence', xp: 30 }],
-                challengeId: null,
-                custom: false,
-                active: true
-            },
-            { 
-                id: 'biz_social', 
-                name: 'Build social media presence', 
-                frequency: 'one-time',
-                rewards: [{ skill: 'influence', xp: 50 }],
-                challengeId: null,
-                custom: false,
-                active: true
-            },
-            { 
-                id: 'biz_launch_prep', 
-                name: 'Prepare for launch', 
-                frequency: 'one-time',
-                rewards: [{ skill: 'business', xp: 75 }],
-                challengeId: null,
-                custom: false,
-                active: true
-            },
-            { 
-                id: 'biz_first_sale', 
-                name: 'Make first sale', 
-                frequency: 'one-time',
-                rewards: [{ skill: 'business', xp: 150 }, { skill: 'influence', xp: 50 }],
-                challengeId: null,
-                custom: false,
-                active: true
-            }
+            // ═══════════════════════════════════════════════════════════════
+            // ONE-TIME QUESTS - ENTREPRENEUR PATH
+            // ═══════════════════════════════════════════════════════════════
+            
+            // Stage 1: Foundation
+            { id: 'biz_research', name: 'Market research for plugin ideas', frequency: 'one-time', rewards: [{ skill: 'business', xp: 40 }], challengeId: null, custom: false, active: true },
+            { id: 'biz_design', name: 'Design business website mockup', frequency: 'one-time', rewards: [{ skill: 'business', xp: 30 }, { skill: 'artistry', xp: 30 }], challengeId: null, custom: false, active: true },
+            { id: 'biz_brand', name: 'Create brand assets (logo, colors)', frequency: 'one-time', rewards: [{ skill: 'artistry', xp: 40 }, { skill: 'business', xp: 30 }], challengeId: null, custom: false, active: true },
+            
+            // Stage 2: Build
+            { id: 'biz_website_dev', name: 'Build Moonshot Dev website', frequency: 'one-time', rewards: [{ skill: 'business', xp: 100 }], challengeId: null, custom: false, active: true },
+            { id: 'biz_plugin_plan', name: 'Plan first WordPress plugin', frequency: 'one-time', rewards: [{ skill: 'business', xp: 40 }], challengeId: null, custom: false, active: true },
+            { id: 'biz_plugin_dev', name: 'Develop first plugin MVP', frequency: 'one-time', rewards: [{ skill: 'business', xp: 150 }], challengeId: null, custom: false, active: true },
+            
+            // Stage 3: Polish
+            { id: 'biz_plugin_polish', name: 'Polish plugin for release', frequency: 'one-time', rewards: [{ skill: 'business', xp: 75 }], challengeId: null, custom: false, active: true },
+            { id: 'biz_docs', name: 'Write plugin documentation', frequency: 'one-time', rewards: [{ skill: 'business', xp: 50 }], challengeId: null, custom: false, active: true },
+            { id: 'biz_marketing_plan', name: 'Create marketing plan', frequency: 'one-time', rewards: [{ skill: 'business', xp: 40 }, { skill: 'influence', xp: 30 }], challengeId: null, custom: false, active: true },
+            
+            // Stage 4: Launch
+            { id: 'biz_social', name: 'Set up business social media', frequency: 'one-time', rewards: [{ skill: 'business', xp: 30 }, { skill: 'influence', xp: 30 }], challengeId: null, custom: false, active: true },
+            { id: 'biz_launch_prep', name: 'Prepare launch materials', frequency: 'one-time', rewards: [{ skill: 'business', xp: 50 }], challengeId: null, custom: false, active: true },
+            { id: 'biz_first_sale', name: 'Make your first sale!', frequency: 'one-time', rewards: [{ skill: 'business', xp: 300 }], challengeId: null, custom: false, active: true },
+
+            // ═══════════════════════════════════════════════════════════════
+            // ONE-TIME QUESTS - OTHER PATH CAPSTONES
+            // ═══════════════════════════════════════════════════════════════
+            
+            // Culinary Master - Mastery stage
+            { id: 'cul_five_course', name: 'Cook a 5-course meal', frequency: 'one-time', rewards: [{ skill: 'culinary', xp: 200 }], challengeId: null, custom: false, active: true },
+            { id: 'cul_teach', name: 'Teach someone to cook a dish', frequency: 'one-time', rewards: [{ skill: 'culinary', xp: 100 }, { skill: 'generosity', xp: 50 }], challengeId: null, custom: false, active: true },
+            { id: 'cul_special_occasion', name: 'Cook for a special occasion', frequency: 'one-time', rewards: [{ skill: 'culinary', xp: 150 }], challengeId: null, custom: false, active: true },
+            
+            // Artistic Visionary - Visionary stage
+            { id: 'art_exhibition', name: 'Display art in exhibition/sale', frequency: 'one-time', rewards: [{ skill: 'artistry', xp: 200 }, { skill: 'influence', xp: 50 }], challengeId: null, custom: false, active: true },
+            { id: 'art_commission', name: 'Complete an art commission', frequency: 'one-time', rewards: [{ skill: 'artistry', xp: 150 }, { skill: 'business', xp: 50 }], challengeId: null, custom: false, active: true },
+            { id: 'art_teach', name: 'Teach someone an art skill', frequency: 'one-time', rewards: [{ skill: 'artistry', xp: 100 }, { skill: 'generosity', xp: 50 }], challengeId: null, custom: false, active: true },
+            
+            // Lifestyle Influencer - Consistency & Influence stages
+            { id: 'inf_30_posts', name: 'Post consistently for 30 days', frequency: 'one-time', rewards: [{ skill: 'influence', xp: 200 }], challengeId: null, custom: false, active: true },
+            { id: 'inf_1k', name: 'Reach 1,000 followers', frequency: 'one-time', rewards: [{ skill: 'influence', xp: 300 }], challengeId: null, custom: false, active: true },
+            { id: 'inf_brand_deal', name: 'Land a brand partnership', frequency: 'one-time', rewards: [{ skill: 'influence', xp: 250 }, { skill: 'business', xp: 100 }], challengeId: null, custom: false, active: true },
+            
+            // Lover Girl - Love stage
+            { id: 'love_trip', name: 'Plan a couples trip', frequency: 'one-time', rewards: [{ skill: 'partnership', xp: 150 }], challengeId: null, custom: false, active: true },
+            { id: 'love_tradition', name: 'Create a new couple tradition', frequency: 'one-time', rewards: [{ skill: 'partnership', xp: 100 }], challengeId: null, custom: false, active: true },
+            { id: 'love_milestone', name: 'Celebrate relationship milestone', frequency: 'one-time', rewards: [{ skill: 'partnership', xp: 125 }], challengeId: null, custom: false, active: true },
+            
+            // Soul Work - Wisdom stage
+            { id: 'soul_30_day', name: 'Complete 30-day meditation challenge', frequency: 'one-time', rewards: [{ skill: 'innerPeace', xp: 200 }], challengeId: null, custom: false, active: true },
+            { id: 'soul_book', name: 'Read a life-changing book', frequency: 'one-time', rewards: [{ skill: 'innerPeace', xp: 100 }], challengeId: null, custom: false, active: true },
+            { id: 'soul_practice', name: 'Establish daily spiritual practice', frequency: 'one-time', rewards: [{ skill: 'innerPeace', xp: 150 }], challengeId: null, custom: false, active: true },
+            
+            // Living Saint - Service stage
+            { id: 'saint_ongoing', name: 'Start ongoing volunteer commitment', frequency: 'one-time', rewards: [{ skill: 'generosity', xp: 200 }], challengeId: null, custom: false, active: true },
+            { id: 'saint_fundraise', name: 'Organize a fundraiser', frequency: 'one-time', rewards: [{ skill: 'generosity', xp: 150 }, { skill: 'business', xp: 50 }], challengeId: null, custom: false, active: true },
+            { id: 'saint_impact', name: 'Make a measurable impact', frequency: 'one-time', rewards: [{ skill: 'generosity', xp: 200 }], challengeId: null, custom: false, active: true },
+            
+            // Secret Garden - Sanctuary stage
+            { id: 'home_room_makeover', name: 'Complete room makeover', frequency: 'one-time', rewards: [{ skill: 'homeCraft', xp: 200 }, { skill: 'artistry', xp: 50 }], challengeId: null, custom: false, active: true },
+            { id: 'home_outdoor', name: 'Create outdoor living space', frequency: 'one-time', rewards: [{ skill: 'homeCraft', xp: 150 }], challengeId: null, custom: false, active: true },
+            { id: 'home_guest_ready', name: 'Make home guest-ready', frequency: 'one-time', rewards: [{ skill: 'homeCraft', xp: 100 }, { skill: 'generosity', xp: 25 }], challengeId: null, custom: false, active: true }
         ];
     }
 
@@ -558,7 +667,7 @@ class LifeRPG {
                         id: 'basics',
                         name: 'Kitchen Basics',
                         description: 'Build your foundation',
-                        questIds: ['cook_meal', 'meal_prep'],
+                        questIds: ['cook_meal', 'meal_prep', 'healthy_breakfast'],
                         satisfiedQuests: [],
                         completed: false,
                         completedDate: null
@@ -567,7 +676,7 @@ class LifeRPG {
                         id: 'techniques',
                         name: 'Technique Training',
                         description: 'Learn new cooking methods',
-                        questIds: ['culinary_experiment', 'new_recipe'],
+                        questIds: ['culinary_experiment', 'new_recipe', 'cul_cuisine'],
                         satisfiedQuests: [],
                         completed: false,
                         completedDate: null
@@ -576,7 +685,7 @@ class LifeRPG {
                         id: 'mastery',
                         name: 'Culinary Mastery',
                         description: 'Achieve cooking excellence',
-                        questIds: [], // TODO: Add advanced culinary quests
+                        questIds: ['cul_signature', 'cul_five_course', 'cul_teach'],
                         satisfiedQuests: [],
                         completed: false,
                         completedDate: null
@@ -602,7 +711,7 @@ class LifeRPG {
                         id: 'dabbler',
                         name: 'Creative Dabbler',
                         description: 'Explore your creative side',
-                        questIds: ['cross_stitch', 'art_learn'],
+                        questIds: ['cross_stitch', 'art_learn', 'sketch'],
                         satisfiedQuests: [],
                         completed: false,
                         completedDate: null
@@ -611,7 +720,7 @@ class LifeRPG {
                         id: 'creator',
                         name: 'Dedicated Creator',
                         description: 'Commit to regular creation',
-                        questIds: ['art_project'],
+                        questIds: ['art_project', 'art_new_medium', 'art_gallery'],
                         satisfiedQuests: [],
                         completed: false,
                         completedDate: null
@@ -620,7 +729,7 @@ class LifeRPG {
                         id: 'visionary',
                         name: 'Artistic Visionary',
                         description: 'Develop your unique voice',
-                        questIds: [], // TODO: Add visionary quests
+                        questIds: ['art_exhibition', 'art_commission', 'art_teach'],
                         satisfiedQuests: [],
                         completed: false,
                         completedDate: null
@@ -646,7 +755,7 @@ class LifeRPG {
                         id: 'presence',
                         name: 'Building Presence',
                         description: 'Establish your online presence',
-                        questIds: ['content_create'],
+                        questIds: ['content_create', 'social_post', 'photo_shoot'],
                         satisfiedQuests: [],
                         completed: false,
                         completedDate: null
@@ -655,7 +764,7 @@ class LifeRPG {
                         id: 'consistency',
                         name: 'Consistent Creator',
                         description: 'Develop a regular content rhythm',
-                        questIds: [], // TODO: Add consistency quests
+                        questIds: ['content_plan', 'inf_30_posts', 'engage_comments'],
                         satisfiedQuests: [],
                         completed: false,
                         completedDate: null
@@ -664,7 +773,7 @@ class LifeRPG {
                         id: 'influence',
                         name: 'True Influencer',
                         description: 'Make a real impact',
-                        questIds: [], // TODO: Add influence quests
+                        questIds: ['inf_1k', 'inf_collab', 'inf_brand_deal'],
                         satisfiedQuests: [],
                         completed: false,
                         completedDate: null
@@ -690,7 +799,7 @@ class LifeRPG {
                         id: 'foundation',
                         name: 'Building Foundation',
                         description: 'Establish consistent habits',
-                        questIds: ['run', 'workout', 'yoga'],
+                        questIds: ['run', 'workout', 'yoga', 'walk_10k'],
                         satisfiedQuests: [],
                         completed: false,
                         completedDate: null
@@ -699,7 +808,7 @@ class LifeRPG {
                         id: 'endurance',
                         name: 'Endurance Builder',
                         description: 'Push your limits',
-                        questIds: ['run_5k', 'fitness_new_class'],
+                        questIds: ['run_5k', 'fitness_new_class', 'fit_challenge'],
                         satisfiedQuests: [],
                         completed: false,
                         completedDate: null
@@ -708,7 +817,7 @@ class LifeRPG {
                         id: 'peak',
                         name: 'Peak Performance',
                         description: 'Achieve athletic excellence',
-                        questIds: ['fitness_milestone'],
+                        questIds: ['fitness_milestone', 'fit_pr'],
                         satisfiedQuests: [],
                         completed: false,
                         completedDate: null
@@ -734,7 +843,7 @@ class LifeRPG {
                         id: 'presence',
                         name: 'Being Present',
                         description: 'Show up for the people you love',
-                        questIds: ['quality_time', 'date_night'],
+                        questIds: ['quality_time', 'date_night', 'check_in'],
                         satisfiedQuests: [],
                         completed: false,
                         completedDate: null
@@ -743,7 +852,7 @@ class LifeRPG {
                         id: 'connection',
                         name: 'Deep Connection',
                         description: 'Build meaningful bonds',
-                        questIds: ['social'],
+                        questIds: ['social', 'friend_date', 'love_surprise'],
                         satisfiedQuests: [],
                         completed: false,
                         completedDate: null
@@ -752,7 +861,7 @@ class LifeRPG {
                         id: 'love',
                         name: 'Embodying Love',
                         description: 'Become a source of love for others',
-                        questIds: [], // TODO: Add love embodiment quests
+                        questIds: ['love_trip', 'love_tradition', 'love_milestone'],
                         satisfiedQuests: [],
                         completed: false,
                         completedDate: null
@@ -778,7 +887,7 @@ class LifeRPG {
                         id: 'awareness',
                         name: 'Building Awareness',
                         description: 'Develop mindfulness practices',
-                        questIds: ['journal', 'phone_free', 'read'],
+                        questIds: ['journal', 'phone_free', 'read', 'meditate'],
                         satisfiedQuests: [],
                         completed: false,
                         completedDate: null
@@ -787,7 +896,7 @@ class LifeRPG {
                         id: 'reflection',
                         name: 'Deep Reflection',
                         description: 'Explore your inner landscape',
-                        questIds: ['yoga'],
+                        questIds: ['yoga', 'gratitude', 'soul_retreat'],
                         satisfiedQuests: [],
                         completed: false,
                         completedDate: null
@@ -796,7 +905,7 @@ class LifeRPG {
                         id: 'wisdom',
                         name: 'Embodied Wisdom',
                         description: 'Live from a place of wisdom',
-                        questIds: [], // TODO: Add wisdom quests
+                        questIds: ['soul_30_day', 'soul_book', 'soul_practice'],
                         satisfiedQuests: [],
                         completed: false,
                         completedDate: null
@@ -822,7 +931,7 @@ class LifeRPG {
                         id: 'kindness',
                         name: 'Daily Kindness',
                         description: 'Practice small acts of kindness',
-                        questIds: ['random_kindness'],
+                        questIds: ['random_kindness', 'help_someone'],
                         satisfiedQuests: [],
                         completed: false,
                         completedDate: null
@@ -831,7 +940,7 @@ class LifeRPG {
                         id: 'giving',
                         name: 'Generous Giving',
                         description: 'Give your time and resources',
-                        questIds: ['volunteer', 'donate'],
+                        questIds: ['volunteer', 'donate', 'saint_mentor'],
                         satisfiedQuests: [],
                         completed: false,
                         completedDate: null
@@ -840,7 +949,7 @@ class LifeRPG {
                         id: 'service',
                         name: 'Life of Service',
                         description: 'Make contribution your way of life',
-                        questIds: [], // TODO: Add service quests
+                        questIds: ['saint_ongoing', 'saint_fundraise', 'saint_impact'],
                         satisfiedQuests: [],
                         completed: false,
                         completedDate: null
@@ -866,7 +975,7 @@ class LifeRPG {
                         id: 'clearing',
                         name: 'Clearing Space',
                         description: 'Declutter and organize',
-                        questIds: ['declutter', 'deep_clean'],
+                        questIds: ['declutter', 'deep_clean', 'tidy_space'],
                         satisfiedQuests: [],
                         completed: false,
                         completedDate: null
@@ -875,7 +984,7 @@ class LifeRPG {
                         id: 'nurturing',
                         name: 'Nurturing Space',
                         description: 'Maintain and improve your environment',
-                        questIds: ['home_repair', 'reno_task', 'garden_work'],
+                        questIds: ['home_repair', 'reno_task', 'garden_work', 'home_decor'],
                         satisfiedQuests: [],
                         completed: false,
                         completedDate: null
@@ -884,7 +993,7 @@ class LifeRPG {
                         id: 'sanctuary',
                         name: 'Creating Sanctuary',
                         description: 'Transform your space into a haven',
-                        questIds: [], // TODO: Add sanctuary quests
+                        questIds: ['home_room_makeover', 'home_outdoor', 'home_guest_ready'],
                         satisfiedQuests: [],
                         completed: false,
                         completedDate: null
@@ -1175,6 +1284,7 @@ class LifeRPG {
 
     getChallengeTemplates() {
         return {
+            // ─── DAILY CHALLENGE ───────────────────────────────────────
             '75-hard': {
                 name: '75 Hard Challenge',
                 description: 'Complete 7 daily tasks for 75 consecutive days. Miss one? Start over.',
@@ -1190,19 +1300,133 @@ class LifeRPG {
                     { id: '75h_alcohol', name: 'No alcohol', frequency: 'daily', rewards: [{ skill: 'innerPeace', xp: 20 }] }
                 ]
             },
-            'movie-date': {
-                name: 'Movie Date with Scott',
-                description: 'Watch a movie together every two weeks',
-                icon: '🎬',
-                interval: { value: 2, unit: 'weeks' },
-                existingQuestIds: ['date_night']
-            },
-            'monthly-craft': {
-                name: 'Monthly Craft Project',
-                description: 'Complete one craft project per month',
-                icon: '📌',
+
+            // ─── PATH CHALLENGES (Monthly, 3 quests each) ──────────────
+
+            // 🚀 Entrepreneur Path
+            'entrepreneur-monthly': {
+                name: 'Moonshot Month',
+                description: 'Build your business empire one month at a time',
+                icon: '🚀',
+                pathId: 'entrepreneur',
                 interval: { value: 1, unit: 'months' },
-                existingQuestIds: ['art_project']
+                existingQuestIds: ['dev_work'],
+                quests: [
+                    { id: 'ent_deep_work', name: 'Deep work session (2+ hrs)', frequency: 'monthly', rewards: [{ skill: 'business', xp: 75 }] },
+                    { id: 'ent_learn', name: 'Learn new business skill', frequency: 'monthly', rewards: [{ skill: 'business', xp: 50 }] }
+                ]
+            },
+
+            // 💪 Fitness Goddess Path
+            'fitness-monthly': {
+                name: 'Fitness Goddess Month',
+                description: 'Push your limits and build your strongest self',
+                icon: '💪',
+                pathId: 'fitness-goddess',
+                interval: { value: 1, unit: 'months' },
+                existingQuestIds: ['fitness_milestone'],
+                quests: [
+                    { id: 'fit_pr', name: 'Set a personal record', frequency: 'monthly', rewards: [{ skill: 'athleticism', xp: 100 }] },
+                    { id: 'fit_challenge', name: 'Complete a fitness challenge', frequency: 'monthly', rewards: [{ skill: 'athleticism', xp: 75 }] }
+                ]
+            },
+
+            // 🍳 Culinary Master Path
+            'culinary-monthly': {
+                name: 'Culinary Quest',
+                description: 'Master your kitchen one dish at a time',
+                icon: '🍳',
+                pathId: 'culinary-master',
+                interval: { value: 1, unit: 'months' },
+                existingQuestIds: ['new_recipe'],
+                quests: [
+                    { id: 'cul_cuisine', name: 'Cook a cuisine you\'ve never tried', frequency: 'monthly', rewards: [{ skill: 'culinary', xp: 75 }] },
+                    { id: 'cul_dinner_party', name: 'Host a dinner for friends', frequency: 'monthly', rewards: [{ skill: 'culinary', xp: 50 }, { skill: 'friendships', xp: 50 }] }
+                ]
+            },
+
+            // 🎨 Artistic Visionary Path
+            'artistic-monthly': {
+                name: 'Creative Sprint',
+                description: 'Express yourself through art every month',
+                icon: '🎨',
+                pathId: 'artistic-visionary',
+                interval: { value: 1, unit: 'months' },
+                existingQuestIds: ['art_project'],
+                quests: [
+                    { id: 'art_new_medium', name: 'Try a new artistic medium', frequency: 'monthly', rewards: [{ skill: 'artistry', xp: 75 }] },
+                    { id: 'art_share', name: 'Share your art publicly', frequency: 'monthly', rewards: [{ skill: 'artistry', xp: 40 }, { skill: 'influence', xp: 35 }] }
+                ]
+            },
+
+            // 💕 Lover Girl Path
+            'lovergirl-monthly': {
+                name: 'Love & Connection',
+                description: 'Nurture your relationships every month',
+                icon: '💕',
+                pathId: 'lover-girl',
+                interval: { value: 1, unit: 'months' },
+                existingQuestIds: ['date_night'],
+                quests: [
+                    { id: 'love_surprise', name: 'Surprise Scott with something thoughtful', frequency: 'monthly', rewards: [{ skill: 'partnership', xp: 75 }] },
+                    { id: 'love_adventure', name: 'Try something new together', frequency: 'monthly', rewards: [{ skill: 'partnership', xp: 50 }, { skill: 'friendships', xp: 25 }] }
+                ]
+            },
+
+            // 🧘 Soul Work Path
+            'soulwork-monthly': {
+                name: 'Inner Journey',
+                description: 'Deepen your spiritual practice monthly',
+                icon: '🧘',
+                pathId: 'soul-work',
+                interval: { value: 1, unit: 'months' },
+                existingQuestIds: ['journal'],
+                quests: [
+                    { id: 'soul_retreat', name: 'Mini retreat day (phone-free)', frequency: 'monthly', rewards: [{ skill: 'innerPeace', xp: 100 }] },
+                    { id: 'soul_meditation', name: 'Complete 10 meditation sessions', frequency: 'monthly', rewards: [{ skill: 'innerPeace', xp: 75 }] }
+                ]
+            },
+
+            // 🤍 Living Saint Path
+            'saint-monthly': {
+                name: 'Giving Heart',
+                description: 'Spread kindness and generosity monthly',
+                icon: '🤍',
+                pathId: 'living-saint',
+                interval: { value: 1, unit: 'months' },
+                existingQuestIds: ['volunteer'],
+                quests: [
+                    { id: 'saint_cause', name: 'Support a cause you believe in', frequency: 'monthly', rewards: [{ skill: 'generosity', xp: 75 }] },
+                    { id: 'saint_mentor', name: 'Help someone with their goals', frequency: 'monthly', rewards: [{ skill: 'generosity', xp: 50 }, { skill: 'friendships', xp: 25 }] }
+                ]
+            },
+
+            // 🌿 Secret Garden Path
+            'garden-monthly': {
+                name: 'Sanctuary Builder',
+                description: 'Create your perfect home sanctuary',
+                icon: '🌿',
+                pathId: 'secret-garden',
+                interval: { value: 1, unit: 'months' },
+                existingQuestIds: ['reno_task'],
+                quests: [
+                    { id: 'garden_project', name: 'Complete a home improvement project', frequency: 'monthly', rewards: [{ skill: 'homeCraft', xp: 100 }] },
+                    { id: 'garden_organize', name: 'Organize/beautify a space', frequency: 'monthly', rewards: [{ skill: 'homeCraft', xp: 50 }, { skill: 'innerPeace', xp: 25 }] }
+                ]
+            },
+
+            // 📸 Lifestyle Influencer Path
+            'influencer-monthly': {
+                name: 'Content Creator',
+                description: 'Build your authentic voice monthly',
+                icon: '📸',
+                pathId: 'lifestyle-influencer',
+                interval: { value: 1, unit: 'months' },
+                existingQuestIds: ['content_create'],
+                quests: [
+                    { id: 'inf_viral', name: 'Create standout content piece', frequency: 'monthly', rewards: [{ skill: 'influence', xp: 75 }, { skill: 'artistry', xp: 25 }] },
+                    { id: 'inf_engage', name: 'Engage with your community', frequency: 'monthly', rewards: [{ skill: 'influence', xp: 50 }, { skill: 'friendships', xp: 25 }] }
+                ]
             }
         };
     }
@@ -1732,6 +1956,8 @@ class LifeRPG {
         const quest = this.data.quests.find(q => q.id === questId);
         if (!quest || !this.canCompleteQuest(quest)) {
             console.log('Cannot complete quest:', questId);
+            this.playSound('error');
+            this.triggerHaptic('error');
             return;
         }
 
@@ -1744,13 +1970,17 @@ class LifeRPG {
             achievements: []
         };
 
+        // Apply comeback bonus multiplier if active
+        const xpMultiplier = (this.data.comebackBonus?.active) ? this.data.comebackBonus.multiplier : 1;
+
         // 1. Award XP to all skills
         quest.rewards.forEach(reward => {
             const skill = this.data.skills[reward.skill];
             const oldLevel = this.getLevelFromXP(skill.xp);
             
-            skill.xp += reward.xp;
-            results.xpGained.push({ skill: reward.skill, xp: reward.xp });
+            const actualXP = Math.floor(reward.xp * xpMultiplier);
+            skill.xp += actualXP;
+            results.xpGained.push({ skill: reward.skill, xp: actualXP });
             
             const newLevel = this.getLevelFromXP(skill.xp);
             if (newLevel > oldLevel) {
@@ -1765,7 +1995,7 @@ class LifeRPG {
         const completion = {
             questId: quest.id,
             timestamp: new Date().toISOString(),
-            xpAwarded: quest.rewards.map(r => ({ skill: r.skill, xp: r.xp })),
+            xpAwarded: quest.rewards.map(r => ({ skill: r.skill, xp: Math.floor(r.xp * xpMultiplier) })),
             photo: photoData // { dataUrl, caption } or null
         };
         this.data.completionLog.completions.push(completion);
@@ -1790,17 +2020,125 @@ class LifeRPG {
         // 4. Update challenge progress
         results.challengeProgress = this.updateChallengeProgress(questId);
 
-        // 5. Check achievements
+        // 5. Check achievements and badges
         results.achievements = this.checkAchievements();
+        this.checkSpecialBadges(results);
 
         // 6. Save
         this.saveData();
 
-        // 7. Render and show notifications
+        // 7. Play sounds and haptics
+        if (results.levelUps.length > 0) {
+            this.playSound('levelUp');
+            this.triggerHaptic('levelUp');
+        } else {
+            this.playSound('complete');
+            this.triggerHaptic('success');
+        }
+
+        // 8. Render and show notifications
         this.renderAll();
+        this.updateProgressRings();
         this.showCompletionNotifications(quest, results);
 
         return results;
+    }
+
+    uncompleteQuest(questId) {
+        const quest = this.data.quests.find(q => q.id === questId);
+        if (!quest) return;
+
+        console.log('Undoing quest completion:', quest.name);
+
+        // Find the most recent completion for this quest today
+        const today = new Date().toDateString();
+        const completionIndex = this.data.completionLog.completions.findLastIndex(c => 
+            c.questId === questId && new Date(c.timestamp).toDateString() === today
+        );
+
+        if (completionIndex === -1) {
+            this.showToast('No completion found to undo', 'error');
+            return;
+        }
+
+        const completion = this.data.completionLog.completions[completionIndex];
+
+        // 1. Remove XP from skills
+        if (completion.xpAwarded) {
+            completion.xpAwarded.forEach(reward => {
+                const skill = this.data.skills[reward.skill];
+                if (skill) {
+                    skill.xp = Math.max(0, skill.xp - reward.xp);
+                }
+            });
+        }
+
+        // 2. Remove from completion log
+        this.data.completionLog.completions.splice(completionIndex, 1);
+
+        // 3. Remove from caches (only if no other completions today/this period)
+        const hasOtherCompletionToday = this.data.completionLog.completions.some(c => 
+            c.questId === questId && new Date(c.timestamp).toDateString() === today
+        );
+        if (!hasOtherCompletionToday) {
+            const todayIndex = this.data.completionLog.completedToday.indexOf(questId);
+            if (todayIndex > -1) this.data.completionLog.completedToday.splice(todayIndex, 1);
+        }
+
+        // Check weekly
+        const thisWeekStart = this.getStartOfWeek(new Date());
+        const hasOtherCompletionThisWeek = this.data.completionLog.completions.some(c => 
+            c.questId === questId && new Date(c.timestamp) >= thisWeekStart
+        );
+        if (!hasOtherCompletionThisWeek) {
+            const weekIndex = this.data.completionLog.completedThisWeek.indexOf(questId);
+            if (weekIndex > -1) this.data.completionLog.completedThisWeek.splice(weekIndex, 1);
+        }
+
+        // Check monthly
+        const thisMonthStart = new Date();
+        thisMonthStart.setDate(1);
+        thisMonthStart.setHours(0, 0, 0, 0);
+        const hasOtherCompletionThisMonth = this.data.completionLog.completions.some(c => 
+            c.questId === questId && new Date(c.timestamp) >= thisMonthStart
+        );
+        if (!hasOtherCompletionThisMonth) {
+            const monthIndex = this.data.completionLog.completedThisMonth.indexOf(questId);
+            if (monthIndex > -1) this.data.completionLog.completedThisMonth.splice(monthIndex, 1);
+        }
+
+        // One-time quests - remove from completedEver
+        if (quest.frequency === 'one-time') {
+            const everIndex = this.data.completionLog.completedEver.indexOf(questId);
+            if (everIndex > -1) this.data.completionLog.completedEver.splice(everIndex, 1);
+        }
+
+        // 4. Update challenge progress (remove from current period)
+        this.data.challenges.forEach(challenge => {
+            if (challenge.questIds.includes(questId)) {
+                const compIndex = challenge.currentPeriod.completedQuests.findIndex(cq => cq.questId === questId);
+                if (compIndex > -1) {
+                    challenge.currentPeriod.completedQuests.splice(compIndex, 1);
+                }
+            }
+        });
+
+        // 5. Save and render
+        this.saveData();
+        this.renderAll();
+        this.updateProgressRings();
+        this.playSound('undo');
+        this.triggerHaptic('medium');
+        this.showToast(`"${quest.name}" undone - XP removed`, 'info');
+    }
+
+    getStartOfWeek(date) {
+        const d = new Date(date);
+        const day = d.getDay();
+        const diff = d.getDate() - day + (day === 0 ? -6 : 1); // Monday start
+        d.setDate(diff);
+        d.setHours(0, 0, 0, 0);
+        return d;
     }
 
     updateSkillStreak(skillId) {
@@ -2433,6 +2771,35 @@ class LifeRPG {
         this.renderAchievements();
         this.renderCollectionLog();
         this.renderPhotoGallery();
+        this.renderSettings();
+    }
+
+    renderSettings() {
+        // Update login streak display
+        if (this.data.loginStreak) {
+            const streakEl = document.getElementById('settings-login-streak');
+            const loginsEl = document.getElementById('settings-total-logins');
+            if (streakEl) streakEl.textContent = this.data.loginStreak.current + ' days';
+            if (loginsEl) loginsEl.textContent = this.data.loginStreak.totalLogins || 0;
+        }
+
+        // Update total quests
+        const questsEl = document.getElementById('settings-total-quests');
+        if (questsEl) {
+            questsEl.textContent = this.data.completionLog?.completions?.length || 0;
+        }
+
+        // Update badges count
+        const badgesEl = document.getElementById('settings-total-badges');
+        if (badgesEl) {
+            badgesEl.textContent = this.data.earnedBadges?.length || 0;
+        }
+
+        // Update sound toggle
+        const soundToggle = document.getElementById('sound-toggle');
+        if (soundToggle) {
+            soundToggle.checked = this.soundEnabled;
+        }
     }
 
     renderCharacterSheet() {
@@ -2531,6 +2898,11 @@ class LifeRPG {
             'one-time': '#E91E63'
         };
 
+        // Complete/Undo button based on state
+        const completeButton = completed 
+            ? `<button class="complete-btn undo" onclick="app.uncompleteQuest('${quest.id}')">↩ Undo</button>`
+            : `<button class="complete-btn" onclick="app.completeQuest('${quest.id}')">Complete</button>`;
+
         card.innerHTML = `
             <div class="quest-header">
                 <div class="quest-title-row">
@@ -2545,9 +2917,7 @@ class LifeRPG {
             </div>
             <div class="quest-rewards">${xpDisplay}</div>
             <div class="quest-actions">
-                <button class="complete-btn" ${completed ? 'disabled' : ''} onclick="app.completeQuest('${quest.id}')">
-                    ${completed ? '✓ Done' : 'Complete'}
-                </button>
+                ${completeButton}
                 <button class="photo-btn" ${completed ? 'disabled' : ''} onclick="app.openQuestPhotoModal('${quest.id}')" title="Complete with Photo">📷</button>
                 <button class="edit-btn" onclick="app.openEditQuestModal('${quest.id}')" title="Edit">✏️</button>
                 ${quest.custom ? `<button class="delete-btn" onclick="app.deleteQuest('${quest.id}')" title="Delete">🗑️</button>` : ''}
@@ -2730,21 +3100,33 @@ class LifeRPG {
             timeStatus = `${daysLeft} days left`;
         }
 
-        // Quest checklist with clickable items
+        // Quest checklist with clickable items (complete or undo)
         const questsHtml = challenge.questIds.map(qId => {
             const quest = this.data.quests.find(q => q.id === qId);
             const done = challenge.currentPeriod.completedQuests.some(cq => cq.questId === qId);
             const rewardText = quest?.rewards?.map(r => `+${r.xp} ${this.getSkillEmoji(r.skill)}`).join(' ') || '';
             
-            return `
-                <div class="challenge-quest-item ${done ? 'done' : 'available'}" 
-                     ${!done ? `onclick="app.completeQuestFromChallenge('${challenge.id}', '${qId}')"` : ''}>
-                    <span class="quest-checkbox">${done ? '✓' : '○'}</span>
-                    <span class="quest-name">${quest?.name || qId}</span>
-                    <span class="quest-rewards">${rewardText}</span>
-                    ${!done ? '<span class="quest-action-hint">Tap to complete</span>' : ''}
-                </div>
-            `;
+            if (done) {
+                return `
+                    <div class="challenge-quest-item done undoable" 
+                         onclick="app.undoQuestFromChallenge('${challenge.id}', '${qId}')">
+                        <span class="quest-checkbox">✓</span>
+                        <span class="quest-name">${quest?.name || qId}</span>
+                        <span class="quest-rewards">${rewardText}</span>
+                        <span class="quest-action-hint undo">↩ Undo</span>
+                    </div>
+                `;
+            } else {
+                return `
+                    <div class="challenge-quest-item available" 
+                         onclick="app.completeQuestFromChallenge('${challenge.id}', '${qId}')">
+                        <span class="quest-checkbox">○</span>
+                        <span class="quest-name">${quest?.name || qId}</span>
+                        <span class="quest-rewards">${rewardText}</span>
+                        <span class="quest-action-hint">Tap to complete</span>
+                    </div>
+                `;
+            }
         }).join('');
 
         accordion.innerHTML = `
@@ -2812,6 +3194,20 @@ class LifeRPG {
     completeQuestFromChallenge(challengeId, questId) {
         // Complete the quest (this will also update the challenge)
         this.completeQuest(questId);
+        
+        // Re-render challenges to show updated state
+        this.renderChallenges();
+        
+        // Re-expand the challenge we were working on
+        const accordion = document.querySelector(`.challenge-accordion[data-challenge-id="${challengeId}"]`);
+        if (accordion) {
+            accordion.classList.add('expanded');
+        }
+    }
+
+    undoQuestFromChallenge(challengeId, questId) {
+        // Undo the quest completion
+        this.uncompleteQuest(questId);
         
         // Re-render challenges to show updated state
         this.renderChallenges();
@@ -3211,9 +3607,38 @@ class LifeRPG {
 
         setTimeout(() => toast.classList.add('show'), 10);
         setTimeout(() => {
-            toast.classList.remove('show');
+            toast.classList.add('hiding');
             setTimeout(() => toast.remove(), 300);
         }, 3000);
+
+        // Trigger confetti for achievements
+        if (type === 'achievement') {
+            this.showConfetti();
+        }
+    }
+
+    showConfetti() {
+        const colors = ['#ffd700', '#ff6b6b', '#4ecdc4', '#45b7d1', '#96ceb4', '#ffeaa7', '#dfe6e9', '#fd79a8'];
+        const confettiCount = 50;
+
+        for (let i = 0; i < confettiCount; i++) {
+            const confetti = document.createElement('div');
+            confetti.className = 'confetti';
+            confetti.style.left = Math.random() * 100 + 'vw';
+            confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+            confetti.style.animationDelay = Math.random() * 2 + 's';
+            confetti.style.animationDuration = (Math.random() * 2 + 2) + 's';
+            
+            // Random shapes
+            if (Math.random() > 0.5) {
+                confetti.style.borderRadius = '50%';
+            }
+            
+            document.body.appendChild(confetti);
+            
+            // Remove after animation
+            setTimeout(() => confetti.remove(), 5000);
+        }
     }
 
     showLevelUpModal(skill, level) {
@@ -3343,6 +3768,7 @@ class LifeRPG {
         if (!quest) return;
 
         this.editingQuestId = questId;
+        this.editQuestPhotoData = null; // Reset photo data
 
         // Populate modal fields
         const nameInput = document.getElementById('edit-quest-name');
@@ -3357,10 +3783,78 @@ class LifeRPG {
             if (xpInput) xpInput.value = quest.rewards[0].xp;
         }
 
+        // Show delete button only for custom quests
+        const deleteBtn = document.getElementById('delete-quest-btn');
+        if (deleteBtn) {
+            deleteBtn.style.display = quest.custom ? 'block' : 'none';
+        }
+
+        // Find last completion with photo for this quest
+        const lastCompletionWithPhoto = this.data.completionLog.completions
+            .filter(c => c.questId === questId && c.photo)
+            .pop();
+
+        const previewBox = document.getElementById('edit-quest-photo-preview');
+        const removeBtn = document.getElementById('edit-quest-remove-photo');
+
+        if (lastCompletionWithPhoto?.photo) {
+            this.editQuestPhotoData = lastCompletionWithPhoto.photo;
+            previewBox.innerHTML = `<img src="${lastCompletionWithPhoto.photo.dataUrl}" alt="Quest photo">`;
+            removeBtn.style.display = 'block';
+        } else {
+            previewBox.innerHTML = '<span class="no-photo-text">No photo</span>';
+            removeBtn.style.display = 'none';
+        }
+
         const modal = document.getElementById('edit-quest-modal');
         if (modal) {
             modal.classList.add('active');
             document.body.classList.add('modal-open');
+        }
+    }
+
+    handleEditQuestPhotoSelect(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        this.handlePhotoUpload(file, (dataUrl) => {
+            this.editQuestPhotoData = { dataUrl, caption: '' };
+            const previewBox = document.getElementById('edit-quest-photo-preview');
+            if (previewBox) {
+                previewBox.innerHTML = `<img src="${dataUrl}" alt="Quest photo">`;
+            }
+            const removeBtn = document.getElementById('edit-quest-remove-photo');
+            if (removeBtn) removeBtn.style.display = 'block';
+        });
+    }
+
+    removeEditQuestPhoto() {
+        this.editQuestPhotoData = null;
+        const previewBox = document.getElementById('edit-quest-photo-preview');
+        if (previewBox) {
+            previewBox.innerHTML = '<span class="no-photo-text">No photo</span>';
+        }
+        const removeBtn = document.getElementById('edit-quest-remove-photo');
+        if (removeBtn) removeBtn.style.display = 'none';
+        
+        // Clear file input
+        const fileInput = document.getElementById('edit-quest-photo');
+        if (fileInput) fileInput.value = '';
+    }
+
+    deleteCurrentQuest() {
+        if (!this.editingQuestId) return;
+        
+        const quest = this.data.quests.find(q => q.id === this.editingQuestId);
+        if (!quest || !quest.custom) {
+            this.showToast('Cannot delete built-in quests', 'error');
+            return;
+        }
+
+        if (confirm(`Delete quest "${quest.name}"? This cannot be undone.`)) {
+            this.deleteQuest(this.editingQuestId);
+            this.closeModal('edit-quest-modal');
+            this.editingQuestId = null;
         }
     }
 
@@ -3381,10 +3875,23 @@ class LifeRPG {
             quest.rewards = [{ skill, xp }];
         }
 
+        // Update photo on last completion if we have new photo data
+        if (this.editQuestPhotoData) {
+            const lastCompletion = this.data.completionLog.completions
+                .filter(c => c.questId === this.editingQuestId)
+                .pop();
+            
+            if (lastCompletion) {
+                lastCompletion.photo = this.editQuestPhotoData;
+            }
+        }
+
         this.saveData();
         this.renderQuests();
         this.closeModal('edit-quest-modal');
         this.editingQuestId = null;
+        this.editQuestPhotoData = null;
+        this.showToast('Quest updated!', 'success');
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -3714,9 +4221,11 @@ class LifeRPG {
         const skill = this.data.skills[skillId];
         if (!skill) return;
 
-        const level = this.calculateLevel(skill.xp);
-        const xpForCurrentLevel = this.xpForLevel(level);
-        const xpForNextLevel = this.xpForLevel(level + 1);
+        this.currentSkillModalId = skillId; // Store for refreshing
+
+        const level = this.getLevelFromXP(skill.xp);
+        const xpForCurrentLevel = this.getXPForLevel(level);
+        const xpForNextLevel = this.getXPForLevel(level + 1);
         const xpProgress = skill.xp - xpForCurrentLevel;
         const xpNeeded = xpForNextLevel - xpForCurrentLevel;
         const progressPercent = (xpProgress / xpNeeded) * 100;
@@ -3737,15 +4246,21 @@ class LifeRPG {
 
         // Get recent completions for this skill
         const recentCompletions = this.getRecentCompletionsForSkill(skillId, 5);
+        const today = new Date().toDateString();
         const recentHtml = recentCompletions.length > 0 
-            ? recentCompletions.map(c => `
-                <div class="skill-quest-item completed">
+            ? recentCompletions.map(c => {
+                const isToday = new Date(c.timestamp).toDateString() === today;
+                return `
+                <div class="skill-quest-item completed ${isToday ? 'undoable' : ''}" 
+                     ${isToday ? `onclick="app.undoQuestFromModal('${c.questId}')"` : ''}>
                     <span class="quest-icon">✓</span>
                     <span class="quest-name">${c.questName}</span>
                     <span class="quest-xp">+${c.xp} XP</span>
-                    <span class="quest-date">${this.formatRelativeDate(c.timestamp)}</span>
+                    ${isToday 
+                        ? '<span class="quest-action undo">↩ Undo</span>' 
+                        : `<span class="quest-date">${this.formatRelativeDate(c.timestamp)}</span>`}
                 </div>
-            `).join('')
+            `}).join('')
             : '<p class="empty-hint">No recent completions</p>';
         document.getElementById('skill-modal-recent').innerHTML = recentHtml;
 
@@ -3771,6 +4286,15 @@ class LifeRPG {
     closeSkillModal() {
         document.getElementById('skill-modal').classList.remove('active');
         document.body.classList.remove('modal-open');
+        this.currentSkillModalId = null;
+    }
+
+    undoQuestFromModal(questId) {
+        this.uncompleteQuest(questId);
+        // Refresh the modal
+        if (this.currentSkillModalId) {
+            this.openSkillModal(this.currentSkillModalId);
+        }
     }
 
     getRecentCompletionsForSkill(skillId, limit = 5) {
@@ -3937,6 +4461,432 @@ class LifeRPG {
 
         localStorage.removeItem('lifeRPGData');
         location.reload();
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // PROGRESS RINGS
+    // ═══════════════════════════════════════════════════════════════
+
+    updateProgressRings() {
+        const circumference = 2 * Math.PI * 45; // r=45
+
+        // Daily quests completed
+        const dailyQuests = this.data.quests.filter(q => q.frequency === 'daily' && q.active);
+        const completedToday = this.data.completionLog?.completedToday?.length || 0;
+        const dailyPercent = dailyQuests.length > 0 ? (completedToday / dailyQuests.length) * 100 : 0;
+        
+        const dailyRing = document.querySelector('.daily-quests-ring');
+        if (dailyRing) {
+            dailyRing.style.strokeDasharray = `${(dailyPercent / 100) * circumference}, ${circumference}`;
+        }
+        document.getElementById('daily-quests-done').textContent = completedToday;
+
+        // Skills trained today
+        const skillsTrained = Object.values(this.data.skills).filter(s => 
+            s.lastAwardedDate === new Date().toDateString()
+        ).length;
+        const skillsPercent = (skillsTrained / 10) * 100;
+        
+        const skillsRing = document.querySelector('.skills-trained-ring');
+        if (skillsRing) {
+            skillsRing.style.strokeDasharray = `${(skillsPercent / 100) * circumference}, ${circumference}`;
+        }
+        document.getElementById('skills-trained').textContent = skillsTrained;
+
+        // Challenge progress (average of all active challenges)
+        const activeChallenges = this.data.challenges.filter(c => c.active);
+        let challengePercent = 0;
+        if (activeChallenges.length > 0) {
+            const totalPercent = activeChallenges.reduce((sum, c) => {
+                const completed = c.currentPeriod.completedQuests.length;
+                const total = c.questIds.length;
+                return sum + (completed / total) * 100;
+            }, 0);
+            challengePercent = totalPercent / activeChallenges.length;
+        }
+        
+        const challengeRing = document.querySelector('.challenges-ring');
+        if (challengeRing) {
+            challengeRing.style.strokeDasharray = `${(challengePercent / 100) * circumference}, ${circumference}`;
+        }
+        document.getElementById('challenges-progress').textContent = Math.round(challengePercent) + '%';
+
+        // Update login streak display
+        const loginStreakEl = document.getElementById('login-streak');
+        if (loginStreakEl && this.data.loginStreak) {
+            loginStreakEl.textContent = this.data.loginStreak.current;
+        }
+
+        // Update daily XP
+        const dailyXP = this.calculateDailyXP();
+        document.getElementById('daily-xp').textContent = dailyXP;
+    }
+
+    calculateDailyXP() {
+        const today = new Date().toDateString();
+        return this.data.completionLog?.completions
+            ?.filter(c => new Date(c.timestamp).toDateString() === today)
+            ?.reduce((sum, c) => sum + (c.xpAwarded?.reduce((s, x) => s + x.xp, 0) || 0), 0) || 0;
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // WEEKLY SUMMARY IMAGE GENERATOR
+    // ═══════════════════════════════════════════════════════════════
+
+    generateWeeklySummary() {
+        const canvas = document.getElementById('summary-canvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Polyfill for roundRect (not available in all browsers)
+        if (!ctx.roundRect) {
+            ctx.roundRect = function(x, y, w, h, r) {
+                if (w < 2 * r) r = w / 2;
+                if (h < 2 * r) r = h / 2;
+                this.moveTo(x + r, y);
+                this.arcTo(x + w, y, x + w, y + h, r);
+                this.arcTo(x + w, y + h, x, y + h, r);
+                this.arcTo(x, y + h, x, y, r);
+                this.arcTo(x, y, x + w, y, r);
+                this.closePath();
+                return this;
+            };
+        }
+        
+        // Set canvas size for Instagram story (1080x1920)
+        canvas.width = 1080;
+        canvas.height = 1920;
+
+        // Background gradient
+        const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+        gradient.addColorStop(0, '#1a0f0a');
+        gradient.addColorStop(0.5, '#2b1810');
+        gradient.addColorStop(1, '#1a0f0a');
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // Add decorative border
+        ctx.strokeStyle = '#d4af37';
+        ctx.lineWidth = 8;
+        ctx.strokeRect(30, 30, canvas.width - 60, canvas.height - 60);
+
+        // Inner border
+        ctx.strokeStyle = '#8b6914';
+        ctx.lineWidth = 3;
+        ctx.strokeRect(50, 50, canvas.width - 100, canvas.height - 100);
+
+        // Title
+        ctx.fillStyle = '#d4af37';
+        ctx.font = 'bold 72px Georgia, serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('✨ Weekly Recap ✨', canvas.width / 2, 150);
+
+        // Date range
+        const now = new Date();
+        const weekAgo = new Date(now - 7 * 24 * 60 * 60 * 1000);
+        const dateRange = `${weekAgo.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${now.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
+        ctx.fillStyle = '#c9a55a';
+        ctx.font = '36px Georgia, serif';
+        ctx.fillText(dateRange, canvas.width / 2, 210);
+
+        // Calculate weekly stats
+        const weeklyStats = this.calculateWeeklyStats();
+
+        // Main stats section
+        let y = 320;
+
+        // Total XP this week
+        this.drawStatCard(ctx, 'Total XP Earned', weeklyStats.totalXP.toLocaleString(), '⚡', 100, y, 880, 140);
+        y += 170;
+
+        // Quests completed
+        this.drawStatCard(ctx, 'Quests Completed', weeklyStats.questsCompleted.toString(), '✓', 100, y, 420, 140);
+        this.drawStatCard(ctx, 'Login Streak', (this.data.loginStreak?.current || 0) + ' days', '🔥', 560, y, 420, 140);
+        y += 170;
+
+        // Skills section
+        y += 30;
+        ctx.fillStyle = '#d4af37';
+        ctx.font = 'bold 48px Georgia, serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('📊 Skill Progress', canvas.width / 2, y);
+        y += 60;
+
+        // Draw skill bars
+        const skills = Object.entries(this.data.skills)
+            .map(([id, data]) => ({
+                id,
+                name: this.getSkillName(id),
+                emoji: this.getSkillEmoji(id),
+                level: this.getLevelFromXP(data.xp),
+                xp: data.xp,
+                weeklyXP: weeklyStats.skillXP[id] || 0
+            }))
+            .sort((a, b) => b.weeklyXP - a.weeklyXP);
+
+        skills.forEach((skill, i) => {
+            this.drawSkillBar(ctx, skill, 100, y + (i * 85), 880);
+        });
+
+        y += skills.length * 85 + 50;
+
+        // Achievements/highlights
+        if (weeklyStats.levelUps.length > 0) {
+            ctx.fillStyle = '#d4af37';
+            ctx.font = 'bold 42px Georgia, serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('🏆 Level Ups This Week', canvas.width / 2, y);
+            y += 50;
+            
+            weeklyStats.levelUps.forEach(lu => {
+                ctx.fillStyle = '#c9a55a';
+                ctx.font = '32px Georgia, serif';
+                ctx.fillText(`${this.getSkillEmoji(lu.skill)} ${this.getSkillName(lu.skill)} → Level ${lu.level}`, canvas.width / 2, y);
+                y += 45;
+            });
+        }
+
+        // Footer
+        ctx.fillStyle = '#8b6914';
+        ctx.font = 'italic 28px Georgia, serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('Life RPG - Level Up Your Life', canvas.width / 2, canvas.height - 80);
+
+        // Show modal
+        document.getElementById('weekly-summary-modal').classList.add('active');
+        document.body.classList.add('modal-open');
+    }
+
+    drawStatCard(ctx, label, value, emoji, x, y, width, height) {
+        // Card background
+        ctx.fillStyle = 'rgba(43, 24, 16, 0.8)';
+        ctx.strokeStyle = '#8b6914';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.roundRect(x, y, width, height, 15);
+        ctx.fill();
+        ctx.stroke();
+
+        // Emoji
+        ctx.font = '48px Arial';
+        ctx.textAlign = 'left';
+        ctx.fillText(emoji, x + 25, y + 70);
+
+        // Value
+        ctx.fillStyle = '#d4af37';
+        ctx.font = 'bold 52px Georgia, serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(value, x + width / 2 + 20, y + 65);
+
+        // Label
+        ctx.fillStyle = '#c9a55a';
+        ctx.font = '28px Georgia, serif';
+        ctx.fillText(label, x + width / 2 + 20, y + 105);
+    }
+
+    drawSkillBar(ctx, skill, x, y, width) {
+        const barHeight = 45;
+        const progress = Math.min((skill.xp / this.getXPForLevel(skill.level + 1)) * 100, 100);
+
+        // Emoji and name
+        ctx.fillStyle = '#c9a55a';
+        ctx.font = '28px Georgia, serif';
+        ctx.textAlign = 'left';
+        ctx.fillText(`${skill.emoji} ${skill.name}`, x, y + 25);
+
+        // Level badge
+        ctx.fillStyle = '#d4af37';
+        ctx.font = 'bold 24px Georgia, serif';
+        ctx.textAlign = 'right';
+        ctx.fillText(`Lv ${skill.level}`, x + width, y + 25);
+
+        // Weekly XP
+        if (skill.weeklyXP > 0) {
+            ctx.fillStyle = '#4ade80';
+            ctx.font = '22px Georgia, serif';
+            ctx.fillText(`+${skill.weeklyXP} XP`, x + width - 100, y + 25);
+        }
+
+        // Background bar
+        ctx.fillStyle = '#1a0f0a';
+        ctx.beginPath();
+        ctx.roundRect(x, y + 35, width, barHeight, 8);
+        ctx.fill();
+
+        // Progress fill
+        const progressGradient = ctx.createLinearGradient(x, 0, x + width * (progress / 100), 0);
+        progressGradient.addColorStop(0, '#d4af37');
+        progressGradient.addColorStop(1, '#f4d03f');
+        ctx.fillStyle = progressGradient;
+        ctx.beginPath();
+        ctx.roundRect(x, y + 35, width * (progress / 100), barHeight, 8);
+        ctx.fill();
+    }
+
+    calculateWeeklyStats() {
+        const now = new Date();
+        const weekAgo = new Date(now - 7 * 24 * 60 * 60 * 1000);
+        
+        const weeklyCompletions = this.data.completionLog?.completions?.filter(c => 
+            new Date(c.timestamp) >= weekAgo
+        ) || [];
+
+        const stats = {
+            totalXP: 0,
+            questsCompleted: weeklyCompletions.length,
+            skillXP: {},
+            levelUps: []
+        };
+
+        // Calculate XP per skill
+        weeklyCompletions.forEach(c => {
+            c.xpAwarded?.forEach(xp => {
+                stats.totalXP += xp.xp;
+                stats.skillXP[xp.skill] = (stats.skillXP[xp.skill] || 0) + xp.xp;
+            });
+        });
+
+        // Find level ups (simplistic - check if current level was reached this week)
+        // For now, just show skills that gained XP
+        Object.entries(stats.skillXP).forEach(([skill, xp]) => {
+            if (xp >= 83) { // Roughly enough for a level at low levels
+                const currentLevel = this.getLevelFromXP(this.data.skills[skill].xp);
+                stats.levelUps.push({ skill, level: currentLevel });
+            }
+        });
+
+        return stats;
+    }
+
+    downloadWeeklySummary() {
+        const canvas = document.getElementById('summary-canvas');
+        const link = document.createElement('a');
+        link.download = `life-rpg-weekly-${new Date().toISOString().split('T')[0]}.png`;
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+        this.showToast('Summary downloaded!', 'success');
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // SPECIAL BADGES SYSTEM
+    // ═══════════════════════════════════════════════════════════════
+
+    getSpecialBadges() {
+        return [
+            // Streak badges
+            { id: 'streak_7', name: 'Week Warrior', description: '7-day login streak', icon: '🔥', condition: () => this.data.loginStreak?.current >= 7 },
+            { id: 'streak_30', name: 'Monthly Master', description: '30-day login streak', icon: '🌟', condition: () => this.data.loginStreak?.current >= 30 },
+            { id: 'streak_100', name: 'Century Club', description: '100-day login streak', icon: '💯', condition: () => this.data.loginStreak?.current >= 100 },
+            
+            // Completion badges
+            { id: 'first_quest', name: 'First Step', description: 'Complete your first quest', icon: '👣', condition: () => this.data.completionLog?.completions?.length >= 1 },
+            { id: 'quest_50', name: 'Half Century', description: 'Complete 50 quests', icon: '⚔️', condition: () => this.data.completionLog?.completions?.length >= 50 },
+            { id: 'quest_100', name: 'Centurion', description: 'Complete 100 quests', icon: '🏛️', condition: () => this.data.completionLog?.completions?.length >= 100 },
+            { id: 'quest_500', name: 'Legend', description: 'Complete 500 quests', icon: '🦸', condition: () => this.data.completionLog?.completions?.length >= 500 },
+            
+            // Level badges
+            { id: 'first_level', name: 'Leveling Up', description: 'Reach level 2 in any skill', icon: '📈', condition: () => Object.values(this.data.skills).some(s => this.getLevelFromXP(s.xp) >= 2) },
+            { id: 'level_10', name: 'Double Digits', description: 'Reach level 10 in any skill', icon: '🔟', condition: () => Object.values(this.data.skills).some(s => this.getLevelFromXP(s.xp) >= 10) },
+            { id: 'level_50', name: 'Halfway There', description: 'Reach level 50 in any skill', icon: '🎯', condition: () => Object.values(this.data.skills).some(s => this.getLevelFromXP(s.xp) >= 50) },
+            { id: 'level_99', name: 'Mastery', description: 'Reach level 99 in any skill', icon: '👑', condition: () => Object.values(this.data.skills).some(s => this.getLevelFromXP(s.xp) >= 99) },
+            
+            // Balance badges
+            { id: 'balanced_5', name: 'Well Rounded', description: 'Get all skills to level 5+', icon: '⚖️', condition: () => Object.values(this.data.skills).every(s => this.getLevelFromXP(s.xp) >= 5) },
+            { id: 'balanced_10', name: 'Renaissance Soul', description: 'Get all skills to level 10+', icon: '🎨', condition: () => Object.values(this.data.skills).every(s => this.getLevelFromXP(s.xp) >= 10) },
+            
+            // Special activity badges
+            { id: 'early_bird', name: 'Early Bird', description: 'Complete a quest before 7am', icon: '🌅', condition: () => this.data.completionLog?.completions?.some(c => new Date(c.timestamp).getHours() < 7) },
+            { id: 'night_owl', name: 'Night Owl', description: 'Complete a quest after 11pm', icon: '🦉', condition: () => this.data.completionLog?.completions?.some(c => new Date(c.timestamp).getHours() >= 23) },
+            { id: 'weekend_warrior', name: 'Weekend Warrior', description: 'Complete 10+ quests on a weekend', icon: '🎉', condition: () => this.checkWeekendWarrior() },
+            
+            // Challenge badges
+            { id: 'challenge_start', name: 'Challenger', description: 'Start your first challenge', icon: '🎯', condition: () => this.data.challenges?.length >= 1 },
+            { id: 'challenge_complete', name: 'Challenge Champion', description: 'Maintain a 7+ day challenge streak', icon: '🏆', condition: () => this.data.challenges?.some(c => c.currentStreak >= 7) },
+            
+            // Collection badges
+            { id: 'collector', name: 'Memory Keeper', description: 'Add 10 items to Collection Log', icon: '📸', condition: () => (this.data.collectionLog?.entries?.length || 0) >= 10 },
+            { id: 'photographer', name: 'Shutterbug', description: 'Complete 20 quests with photos', icon: '📷', condition: () => this.data.completionLog?.completions?.filter(c => c.photo)?.length >= 20 },
+            
+            // Path badges
+            { id: 'path_started', name: 'Path Finder', description: 'Complete a path stage', icon: '🗺️', condition: () => this.data.paths?.some(p => p.stages?.some(s => s.completed)) },
+            { id: 'path_complete', name: 'Path Master', description: 'Complete an entire path', icon: '🏅', condition: () => this.data.paths?.some(p => p.completed) },
+        ];
+    }
+
+    checkWeekendWarrior() {
+        const completions = this.data.completionLog?.completions || [];
+        const weekendCompletions = {};
+        
+        completions.forEach(c => {
+            const date = new Date(c.timestamp);
+            const day = date.getDay();
+            if (day === 0 || day === 6) {
+                const weekKey = `${date.getFullYear()}-${date.getMonth()}-${Math.floor(date.getDate() / 7)}`;
+                weekendCompletions[weekKey] = (weekendCompletions[weekKey] || 0) + 1;
+            }
+        });
+        
+        return Object.values(weekendCompletions).some(count => count >= 10);
+    }
+
+    checkSpecialBadges(results) {
+        if (!this.data.earnedBadges) {
+            this.data.earnedBadges = [];
+        }
+
+        const badges = this.getSpecialBadges();
+        
+        badges.forEach(badge => {
+            if (!this.data.earnedBadges.includes(badge.id) && badge.condition()) {
+                this.data.earnedBadges.push(badge.id);
+                this.showBadgeEarned(badge);
+            }
+        });
+    }
+
+    showBadgeEarned(badge) {
+        this.playSound('achievement');
+        this.triggerHaptic('levelUp');
+        this.showConfetti();
+        
+        setTimeout(() => {
+            this.showToast(`🏅 Badge Earned: ${badge.name}!`, 'achievement');
+        }, 500);
+    }
+
+    openBadgesModal() {
+        const container = document.getElementById('badges-container');
+        if (!container) return;
+
+        const badges = this.getSpecialBadges();
+        const earnedBadges = this.data.earnedBadges || [];
+
+        container.innerHTML = badges.map(badge => {
+            const earned = earnedBadges.includes(badge.id);
+            return `
+                <div class="badge-card ${earned ? 'earned' : 'locked'}">
+                    <div class="badge-icon">${earned ? badge.icon : '🔒'}</div>
+                    <div class="badge-info">
+                        <h4>${badge.name}</h4>
+                        <p>${badge.description}</p>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        document.getElementById('badges-modal').classList.add('active');
+        document.body.classList.add('modal-open');
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // SETTINGS
+    // ═══════════════════════════════════════════════════════════════
+
+    toggleSound() {
+        this.soundEnabled = !this.soundEnabled;
+        if (!this.data.settings) this.data.settings = {};
+        this.data.settings.soundEnabled = this.soundEnabled;
+        this.saveData();
+        this.showToast(this.soundEnabled ? '🔊 Sound enabled' : '🔇 Sound disabled', 'info');
     }
 }
 

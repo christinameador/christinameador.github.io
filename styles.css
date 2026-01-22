@@ -3165,3 +3165,826 @@ textarea:focus {
         display: none;
     }
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+   EDIT QUEST PHOTO
+   ═══════════════════════════════════════════════════════════════════ */
+
+.edit-photo-container {
+    display: flex;
+    gap: 1rem;
+    align-items: flex-start;
+}
+
+.photo-preview-box {
+    width: 120px;
+    height: 120px;
+    background: var(--osrs-dark);
+    border: 2px dashed var(--osrs-border);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+
+.photo-preview-box img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.no-photo-text {
+    color: var(--osrs-tan);
+    opacity: 0.5;
+    font-size: 0.85rem;
+}
+
+.photo-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.photo-upload-btn {
+    background: var(--osrs-brown);
+    border: 2px solid var(--osrs-border);
+    color: var(--osrs-tan);
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: all 0.2s;
+}
+
+.photo-upload-btn:hover {
+    border-color: var(--osrs-gold);
+    color: var(--osrs-gold);
+}
+
+.remove-photo-btn {
+    background: transparent;
+    border: 2px solid #ef4444;
+    color: #ef4444;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: all 0.2s;
+}
+
+.remove-photo-btn:hover {
+    background: #ef4444;
+    color: white;
+}
+
+.form-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    margin-top: 1.5rem;
+}
+
+.form-actions-right {
+    display: flex;
+    gap: 0.5rem;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   UNDO BUTTON
+   ═══════════════════════════════════════════════════════════════════ */
+
+.complete-btn.undo {
+    background: linear-gradient(135deg, #6b7280, #4b5563);
+    border-color: #9ca3af;
+    color: white;
+}
+
+.complete-btn.undo:hover {
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+    border-color: #f87171;
+    transform: scale(1.02);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   ADDICTIVE ANIMATIONS
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* XP gain animation */
+@keyframes xpPop {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.3); }
+    100% { transform: scale(1); }
+}
+
+@keyframes xpFloat {
+    0% { opacity: 1; transform: translateY(0); }
+    100% { opacity: 0; transform: translateY(-30px); }
+}
+
+.xp-gained {
+    animation: xpPop 0.3s ease-out;
+}
+
+/* Level up glow */
+@keyframes levelUpGlow {
+    0% { box-shadow: 0 0 5px var(--osrs-gold); }
+    50% { box-shadow: 0 0 30px var(--osrs-gold), 0 0 60px var(--osrs-gold); }
+    100% { box-shadow: 0 0 5px var(--osrs-gold); }
+}
+
+.level-up {
+    animation: levelUpGlow 1s ease-in-out;
+}
+
+/* Quest complete celebration */
+@keyframes questComplete {
+    0% { transform: scale(1); background: var(--osrs-brown); }
+    25% { transform: scale(1.02); background: rgba(74, 222, 128, 0.2); }
+    50% { transform: scale(1); }
+    75% { transform: scale(1.01); }
+    100% { transform: scale(1); background: var(--osrs-brown); }
+}
+
+.quest-card.just-completed {
+    animation: questComplete 0.6s ease-out;
+}
+
+/* Skill card pulse on XP gain */
+@keyframes skillPulse {
+    0% { transform: scale(1); }
+    25% { transform: scale(1.05); }
+    50% { transform: scale(1); }
+    75% { transform: scale(1.02); }
+    100% { transform: scale(1); }
+}
+
+.skill-card.xp-gained {
+    animation: skillPulse 0.5s ease-out;
+}
+
+/* Progress bar fill animation */
+@keyframes progressFill {
+    from { transform: scaleX(0); }
+    to { transform: scaleX(1); }
+}
+
+.xp-fill {
+    transform-origin: left;
+    transition: width 0.5s ease-out;
+}
+
+/* Streak fire animation */
+@keyframes fireFlicker {
+    0%, 100% { transform: scale(1) rotate(-2deg); }
+    25% { transform: scale(1.1) rotate(2deg); }
+    50% { transform: scale(1.05) rotate(-1deg); }
+    75% { transform: scale(1.15) rotate(1deg); }
+}
+
+.streak-info:hover {
+    animation: fireFlicker 0.5s ease-in-out infinite;
+}
+
+/* Achievement unlock */
+@keyframes achievementUnlock {
+    0% { transform: scale(0) rotate(-180deg); opacity: 0; }
+    50% { transform: scale(1.2) rotate(10deg); opacity: 1; }
+    75% { transform: scale(0.9) rotate(-5deg); }
+    100% { transform: scale(1) rotate(0); opacity: 1; }
+}
+
+.achievement-unlocked {
+    animation: achievementUnlock 0.8s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+/* Toast slide in */
+@keyframes toastSlideIn {
+    from { transform: translateX(100%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes toastSlideOut {
+    from { transform: translateX(0); opacity: 1; }
+    to { transform: translateX(100%); opacity: 0; }
+}
+
+.toast {
+    animation: toastSlideIn 0.3s ease-out;
+}
+
+.toast.hiding {
+    animation: toastSlideOut 0.3s ease-in;
+}
+
+/* Button press effect */
+.complete-btn:active,
+.primary-btn:active {
+    transform: scale(0.95);
+}
+
+/* Nav button bounce */
+.nav-btn:active,
+.mobile-nav-btn:active {
+    transform: scale(0.92);
+}
+
+/* Challenge progress ring animation */
+@keyframes ringFill {
+    from { stroke-dasharray: 0, 100; }
+}
+
+.mini-progress-ring .ring-fill {
+    animation: ringFill 1s ease-out;
+}
+
+/* Confetti effect for major achievements */
+@keyframes confettiFall {
+    0% { transform: translateY(-100vh) rotate(0deg); opacity: 1; }
+    100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+}
+
+.confetti {
+    position: fixed;
+    width: 10px;
+    height: 10px;
+    top: 0;
+    animation: confettiFall 3s ease-in forwards;
+    pointer-events: none;
+    z-index: 9999;
+}
+
+/* Shake animation for errors */
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+    20%, 40%, 60%, 80% { transform: translateX(5px); }
+}
+
+.shake {
+    animation: shake 0.5s ease-in-out;
+}
+
+/* Smooth view transitions */
+.view {
+    animation: fadeIn 0.3s ease-out;
+}
+
+/* Card hover lift effect */
+.quest-card,
+.challenge-accordion,
+.achievement-card,
+.collection-card {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.quest-card:hover,
+.achievement-card:hover,
+.collection-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+}
+
+/* Gradient text for important numbers */
+.stat-value,
+.level-num {
+    background: linear-gradient(135deg, var(--osrs-gold), #fbbf24);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+/* Smooth number transitions */
+.stat-value,
+.current-xp,
+.level-num {
+    transition: all 0.3s ease-out;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   CHALLENGE MODAL STYLES
+   ═══════════════════════════════════════════════════════════════════ */
+
+.challenge-modal-large {
+    max-width: 600px;
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+.challenge-templates h3 {
+    color: var(--osrs-gold);
+    margin: 1.5rem 0 0.75rem;
+    font-size: 1.1rem;
+}
+
+.challenge-templates h3:first-child {
+    margin-top: 0;
+}
+
+.template-section-desc {
+    color: var(--osrs-tan);
+    opacity: 0.7;
+    font-size: 0.85rem;
+    margin-bottom: 1rem;
+}
+
+.template-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 0.75rem;
+}
+
+.template-card {
+    background: var(--osrs-dark);
+    border: 2px solid var(--osrs-border);
+    border-radius: 8px;
+    padding: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.template-card:hover {
+    border-color: var(--osrs-gold);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(255, 215, 0, 0.2);
+}
+
+.template-card:active {
+    transform: scale(0.98);
+}
+
+.template-icon {
+    font-size: 1.75rem;
+    width: 40px;
+    text-align: center;
+}
+
+.template-info h4 {
+    color: var(--osrs-light);
+    font-size: 0.95rem;
+    margin-bottom: 0.25rem;
+}
+
+.template-info p {
+    color: var(--osrs-tan);
+    font-size: 0.75rem;
+    opacity: 0.8;
+}
+
+@media (max-width: 500px) {
+    .template-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .challenge-modal-large {
+        max-height: 90vh;
+    }
+}
+
+/* Social share button style (future feature) */
+.share-btn {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    border: none;
+    color: white;
+    padding: 0.75rem 1.5rem;
+    border-radius: 25px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.2s;
+}
+
+.share-btn:hover {
+    transform: scale(1.05);
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+}
+
+.share-btn:active {
+    transform: scale(0.98);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   PROGRESS RINGS & HEADER STATS
+   ═══════════════════════════════════════════════════════════════════ */
+
+.header-stats {
+    display: flex;
+    justify-content: center;
+    gap: 2rem;
+    margin-top: 1rem;
+}
+
+.header-stat {
+    text-align: center;
+}
+
+.header-stat .stat-value {
+    display: block;
+    font-size: 2rem;
+    font-weight: bold;
+}
+
+.header-stat .stat-label {
+    display: block;
+    font-size: 0.85rem;
+    color: var(--osrs-tan);
+    opacity: 0.9;
+}
+
+.daily-progress-section {
+    background: var(--osrs-brown);
+    border: 3px solid var(--osrs-border);
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+}
+
+.daily-progress-section h2 {
+    color: var(--osrs-gold);
+    font-size: 1.2rem;
+    margin-bottom: 1rem;
+    text-align: center;
+}
+
+.progress-rings-container {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.progress-ring-item {
+    position: relative;
+    width: 100px;
+    height: 100px;
+}
+
+.progress-ring {
+    width: 100%;
+    height: 100%;
+    transform: rotate(-90deg);
+}
+
+.progress-ring .ring-bg {
+    fill: none;
+    stroke: var(--osrs-dark);
+    stroke-width: 8;
+}
+
+.progress-ring .ring-fill {
+    fill: none;
+    stroke-width: 8;
+    stroke-linecap: round;
+    transition: stroke-dasharray 0.5s ease;
+}
+
+.daily-quests-ring {
+    stroke: #4ade80;
+}
+
+.skills-trained-ring {
+    stroke: #60a5fa;
+}
+
+.challenges-ring {
+    stroke: #fbbf24;
+}
+
+.ring-content {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+}
+
+.ring-value {
+    display: block;
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: var(--osrs-gold);
+}
+
+.ring-label {
+    display: block;
+    font-size: 0.7rem;
+    color: var(--osrs-tan);
+    opacity: 0.8;
+}
+
+.streak-protection-banner,
+.comeback-bonus-banner {
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(99, 102, 241, 0.2));
+    border: 2px solid #60a5fa;
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    text-align: center;
+    color: #93c5fd;
+    font-size: 0.9rem;
+    margin-top: 0.5rem;
+}
+
+.comeback-bonus-banner {
+    background: linear-gradient(135deg, rgba(251, 191, 36, 0.2), rgba(245, 158, 11, 0.2));
+    border-color: #fbbf24;
+    color: #fcd34d;
+}
+
+.skills-section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.skills-section-header h2 {
+    color: var(--osrs-gold);
+    font-size: 1.3rem;
+}
+
+.summary-btn {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    border: none;
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    transition: all 0.2s;
+}
+
+.summary-btn:hover {
+    transform: scale(1.05);
+}
+
+.summary-btn:active {
+    transform: scale(0.98);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   WEEKLY SUMMARY MODAL
+   ═══════════════════════════════════════════════════════════════════ */
+
+.summary-modal-content {
+    max-width: 400px;
+    max-height: 90vh;
+    overflow: hidden;
+}
+
+.summary-preview-container {
+    width: 100%;
+    aspect-ratio: 9/16;
+    max-height: 60vh;
+    overflow: hidden;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+}
+
+.summary-preview-container canvas {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+.summary-actions {
+    display: flex;
+    gap: 0.75rem;
+    justify-content: center;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   BADGES MODAL
+   ═══════════════════════════════════════════════════════════════════ */
+
+.badges-modal-content {
+    max-width: 500px;
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+.badges-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 0.75rem;
+}
+
+.badge-card {
+    background: var(--osrs-dark);
+    border: 2px solid var(--osrs-border);
+    border-radius: 8px;
+    padding: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    transition: all 0.2s;
+}
+
+.badge-card.earned {
+    border-color: var(--osrs-gold);
+    background: linear-gradient(135deg, rgba(212, 175, 55, 0.1), rgba(139, 105, 20, 0.1));
+}
+
+.badge-card.locked {
+    opacity: 0.5;
+}
+
+.badge-card.earned:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(255, 215, 0, 0.3);
+}
+
+.badge-icon {
+    font-size: 2.5rem;
+    width: 50px;
+    text-align: center;
+}
+
+.badge-info h4 {
+    color: var(--osrs-gold);
+    font-size: 1rem;
+    margin-bottom: 0.25rem;
+}
+
+.badge-info p {
+    color: var(--osrs-tan);
+    font-size: 0.8rem;
+    opacity: 0.8;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   WARNING TOAST
+   ═══════════════════════════════════════════════════════════════════ */
+
+.toast-warning {
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    color: white;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   RESPONSIVE UPDATES
+   ═══════════════════════════════════════════════════════════════════ */
+
+@media (max-width: 500px) {
+    .header-stats {
+        gap: 1rem;
+    }
+    
+    .header-stat .stat-value {
+        font-size: 1.5rem;
+    }
+    
+    .progress-ring-item {
+        width: 80px;
+        height: 80px;
+    }
+    
+    .ring-value {
+        font-size: 1.2rem;
+    }
+    
+    .badges-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .summary-preview-container {
+        max-height: 50vh;
+    }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   SETTINGS ENHANCEMENTS
+   ═══════════════════════════════════════════════════════════════════ */
+
+.settings-toggle {
+    margin: 1rem 0;
+}
+
+.toggle-label {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    cursor: pointer;
+    color: var(--osrs-tan);
+}
+
+.toggle-label input {
+    display: none;
+}
+
+.toggle-slider {
+    width: 50px;
+    height: 26px;
+    background: var(--osrs-dark);
+    border: 2px solid var(--osrs-border);
+    border-radius: 13px;
+    position: relative;
+    transition: all 0.3s;
+}
+
+.toggle-slider::after {
+    content: '';
+    position: absolute;
+    width: 18px;
+    height: 18px;
+    background: var(--osrs-tan);
+    border-radius: 50%;
+    top: 2px;
+    left: 2px;
+    transition: all 0.3s;
+}
+
+.toggle-label input:checked + .toggle-slider {
+    background: var(--osrs-gold);
+    border-color: var(--osrs-gold);
+}
+
+.toggle-label input:checked + .toggle-slider::after {
+    left: 26px;
+    background: var(--osrs-dark);
+}
+
+.stats-display {
+    background: var(--osrs-dark);
+    border-radius: 8px;
+    padding: 1rem;
+}
+
+.stat-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid var(--osrs-border);
+    color: var(--osrs-tan);
+}
+
+.stat-row:last-child {
+    border-bottom: none;
+}
+
+.stat-row span:last-child {
+    color: var(--osrs-gold);
+    font-weight: bold;
+}
+
+.version-info {
+    font-size: 0.85rem;
+    color: var(--osrs-tan);
+    opacity: 0.7;
+    margin-top: 0.5rem;
+}
+
+.settings-section h3 {
+    color: var(--osrs-gold);
+    margin-bottom: 0.75rem;
+}
+
+.settings-section p {
+    color: var(--osrs-tan);
+    margin-bottom: 0.5rem;
+}
+
+.settings-section .primary-btn {
+    margin-top: 0.5rem;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   UNDO STYLES FOR MODALS AND CHALLENGES
+   ═══════════════════════════════════════════════════════════════════ */
+
+.skill-quest-item.undoable,
+.challenge-quest-item.undoable {
+    cursor: pointer;
+}
+
+.skill-quest-item.undoable:hover,
+.challenge-quest-item.undoable:hover {
+    background: rgba(239, 68, 68, 0.15);
+    border-color: #ef4444;
+}
+
+.skill-quest-item .quest-action.undo,
+.challenge-quest-item .quest-action-hint.undo {
+    color: #ef4444;
+    font-weight: bold;
+}
+
+.skill-quest-item.undoable:hover .quest-action.undo,
+.challenge-quest-item.undoable:hover .quest-action-hint.undo {
+    color: #f87171;
+}
+
+.challenge-quest-item.done.undoable {
+    opacity: 1;
+    cursor: pointer;
+}
+
+.challenge-quest-item.done.undoable:hover {
+    transform: translateX(3px);
+    background: rgba(239, 68, 68, 0.1);
+}

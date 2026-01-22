@@ -43,8 +43,68 @@
         <div id="character-view" class="view active">
             <div class="character-header">
                 <h1>Christina's Adventure</h1>
-                <div class="total-level">Total Level: <span id="total-level">10</span></div>
-                <div class="daily-progress">Today's XP: <span id="daily-xp">0</span></div>
+                <div class="header-stats">
+                    <div class="header-stat">
+                        <span class="stat-value" id="total-level">10</span>
+                        <span class="stat-label">Total Level</span>
+                    </div>
+                    <div class="header-stat">
+                        <span class="stat-value" id="login-streak">0</span>
+                        <span class="stat-label">🔥 Login Streak</span>
+                    </div>
+                    <div class="header-stat">
+                        <span class="stat-value" id="daily-xp">0</span>
+                        <span class="stat-label">Today's XP</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Daily Progress Rings -->
+            <div class="daily-progress-section">
+                <h2>Today's Progress</h2>
+                <div class="progress-rings-container">
+                    <div class="progress-ring-item">
+                        <svg class="progress-ring" viewBox="0 0 100 100">
+                            <circle class="ring-bg" cx="50" cy="50" r="45"/>
+                            <circle class="ring-fill daily-quests-ring" cx="50" cy="50" r="45" stroke-dasharray="0, 283"/>
+                        </svg>
+                        <div class="ring-content">
+                            <span class="ring-value" id="daily-quests-done">0</span>
+                            <span class="ring-label">Quests</span>
+                        </div>
+                    </div>
+                    <div class="progress-ring-item">
+                        <svg class="progress-ring" viewBox="0 0 100 100">
+                            <circle class="ring-bg" cx="50" cy="50" r="45"/>
+                            <circle class="ring-fill skills-trained-ring" cx="50" cy="50" r="45" stroke-dasharray="0, 283"/>
+                        </svg>
+                        <div class="ring-content">
+                            <span class="ring-value" id="skills-trained">0</span>
+                            <span class="ring-label">Skills</span>
+                        </div>
+                    </div>
+                    <div class="progress-ring-item">
+                        <svg class="progress-ring" viewBox="0 0 100 100">
+                            <circle class="ring-bg" cx="50" cy="50" r="45"/>
+                            <circle class="ring-fill challenges-ring" cx="50" cy="50" r="45" stroke-dasharray="0, 283"/>
+                        </svg>
+                        <div class="ring-content">
+                            <span class="ring-value" id="challenges-progress">0%</span>
+                            <span class="ring-label">Challenges</span>
+                        </div>
+                    </div>
+                </div>
+                <div id="streak-protection-banner" class="streak-protection-banner" style="display: none;">
+                    🛡️ Streak Protection Available (<span id="protection-count">1</span> remaining this week)
+                </div>
+                <div id="comeback-bonus-banner" class="comeback-bonus-banner" style="display: none;">
+                    🎁 Welcome back! <span id="comeback-multiplier">1.5x</span> XP bonus active today!
+                </div>
+            </div>
+
+            <div class="skills-section-header">
+                <h2>Skills</h2>
+                <button class="summary-btn" onclick="app.generateWeeklySummary()">📊 Weekly Summary</button>
             </div>
 
             <div class="skills-container">
@@ -295,7 +355,46 @@
             </div>
 
             <div class="settings-section">
-                <h3>Data Management</h3>
+                <h3>🏅 Special Badges</h3>
+                <p>Track your special achievements and milestones!</p>
+                <button class="primary-btn" onclick="app.openBadgesModal()">View Badges</button>
+            </div>
+
+            <div class="settings-section">
+                <h3>🔊 Sound & Haptics</h3>
+                <div class="settings-toggle">
+                    <label class="toggle-label">
+                        <input type="checkbox" id="sound-toggle" onchange="app.toggleSound()" checked>
+                        <span class="toggle-slider"></span>
+                        Enable Sounds
+                    </label>
+                </div>
+            </div>
+
+            <div class="settings-section">
+                <h3>📊 Stats</h3>
+                <div class="stats-display">
+                    <div class="stat-row">
+                        <span>Login Streak:</span>
+                        <span id="settings-login-streak">0 days</span>
+                    </div>
+                    <div class="stat-row">
+                        <span>Total Logins:</span>
+                        <span id="settings-total-logins">0</span>
+                    </div>
+                    <div class="stat-row">
+                        <span>Quests Completed:</span>
+                        <span id="settings-total-quests">0</span>
+                    </div>
+                    <div class="stat-row">
+                        <span>Badges Earned:</span>
+                        <span id="settings-total-badges">0</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="settings-section">
+                <h3>💾 Data Management</h3>
                 <div class="settings-buttons">
                     <button class="secondary-btn" onclick="app.exportData()">📤 Export Data</button>
                     <label class="secondary-btn">
@@ -307,9 +406,10 @@
             </div>
 
             <div class="settings-section">
-                <h3>About</h3>
-                <p>Life RPG v2.0 - OSRS-inspired life gamification</p>
+                <h3>ℹ️ About</h3>
+                <p>Life RPG v3.0 - OSRS-inspired life gamification</p>
                 <p>Data is stored locally in your browser.</p>
+                <p class="version-info">10 Skills • 9 Paths • Special Badges • Weekly Summaries</p>
             </div>
         </div>
     </div>
@@ -433,10 +533,29 @@
                         <input type="number" id="edit-quest-xp" min="1" max="500">
                     </div>
                 </div>
+
+                <div class="form-group">
+                    <label>Last Completion Photo</label>
+                    <div id="edit-quest-photo-container" class="edit-photo-container">
+                        <div id="edit-quest-photo-preview" class="photo-preview-box">
+                            <span class="no-photo-text">No photo</span>
+                        </div>
+                        <div class="photo-actions">
+                            <label class="photo-upload-btn">
+                                📷 Add/Change Photo
+                                <input type="file" id="edit-quest-photo" accept="image/*" onchange="app.handleEditQuestPhotoSelect(event)" hidden>
+                            </label>
+                            <button type="button" class="remove-photo-btn" id="edit-quest-remove-photo" onclick="app.removeEditQuestPhoto()" style="display: none;">🗑️ Remove</button>
+                        </div>
+                    </div>
+                </div>
                 
                 <div class="form-actions">
-                    <button type="button" class="secondary-btn" onclick="closeEditQuestModal()">Cancel</button>
-                    <button type="submit" class="primary-btn">Save Changes</button>
+                    <button type="button" class="danger-btn" id="delete-quest-btn" onclick="app.deleteCurrentQuest()">Delete Quest</button>
+                    <div class="form-actions-right">
+                        <button type="button" class="secondary-btn" onclick="closeEditQuestModal()">Cancel</button>
+                        <button type="submit" class="primary-btn">Save Changes</button>
+                    </div>
                 </div>
             </form>
         </div>
@@ -444,14 +563,14 @@
 
     <!-- Add Challenge Modal -->
     <div id="add-challenge-modal" class="modal">
-        <div class="modal-content">
+        <div class="modal-content challenge-modal-large">
             <div class="modal-header">
                 <h2>Start a Challenge</h2>
                 <button class="modal-close" onclick="closeAddChallengeModal()">×</button>
             </div>
             
             <div class="challenge-templates">
-                <h3>Challenge Templates</h3>
+                <h3>⚔️ Intensive Challenge</h3>
                 
                 <div class="template-card" data-challenge-template="75-hard">
                     <div class="template-icon">⚔️</div>
@@ -460,20 +579,81 @@
                         <p>7 daily tasks for 75 consecutive days</p>
                     </div>
                 </div>
+
+                <h3>🛤️ Path Challenges (Monthly)</h3>
+                <p class="template-section-desc">3 quests each, complete monthly to build streaks</p>
                 
-                <div class="template-card" data-challenge-template="movie-date">
-                    <div class="template-icon">🎬</div>
-                    <div class="template-info">
-                        <h4>Movie Date with Scott</h4>
-                        <p>Bi-weekly movie dates</p>
+                <div class="template-grid">
+                    <div class="template-card" data-challenge-template="entrepreneur-monthly">
+                        <div class="template-icon">🚀</div>
+                        <div class="template-info">
+                            <h4>Moonshot Month</h4>
+                            <p>Build your business empire</p>
+                        </div>
                     </div>
-                </div>
-                
-                <div class="template-card" data-challenge-template="monthly-craft">
-                    <div class="template-icon">📌</div>
-                    <div class="template-info">
-                        <h4>Monthly Craft Project</h4>
-                        <p>Complete one craft per month</p>
+                    
+                    <div class="template-card" data-challenge-template="fitness-monthly">
+                        <div class="template-icon">💪</div>
+                        <div class="template-info">
+                            <h4>Fitness Goddess</h4>
+                            <p>Push your limits</p>
+                        </div>
+                    </div>
+                    
+                    <div class="template-card" data-challenge-template="culinary-monthly">
+                        <div class="template-icon">🍳</div>
+                        <div class="template-info">
+                            <h4>Culinary Quest</h4>
+                            <p>Master your kitchen</p>
+                        </div>
+                    </div>
+                    
+                    <div class="template-card" data-challenge-template="artistic-monthly">
+                        <div class="template-icon">🎨</div>
+                        <div class="template-info">
+                            <h4>Creative Sprint</h4>
+                            <p>Express through art</p>
+                        </div>
+                    </div>
+                    
+                    <div class="template-card" data-challenge-template="lovergirl-monthly">
+                        <div class="template-icon">💕</div>
+                        <div class="template-info">
+                            <h4>Love & Connection</h4>
+                            <p>Nurture relationships</p>
+                        </div>
+                    </div>
+                    
+                    <div class="template-card" data-challenge-template="soulwork-monthly">
+                        <div class="template-icon">🧘</div>
+                        <div class="template-info">
+                            <h4>Inner Journey</h4>
+                            <p>Deepen spiritual practice</p>
+                        </div>
+                    </div>
+                    
+                    <div class="template-card" data-challenge-template="saint-monthly">
+                        <div class="template-icon">🤍</div>
+                        <div class="template-info">
+                            <h4>Giving Heart</h4>
+                            <p>Spread kindness</p>
+                        </div>
+                    </div>
+                    
+                    <div class="template-card" data-challenge-template="garden-monthly">
+                        <div class="template-icon">🌿</div>
+                        <div class="template-info">
+                            <h4>Sanctuary Builder</h4>
+                            <p>Create your home sanctuary</p>
+                        </div>
+                    </div>
+                    
+                    <div class="template-card" data-challenge-template="influencer-monthly">
+                        <div class="template-icon">📸</div>
+                        <div class="template-info">
+                            <h4>Content Creator</h4>
+                            <p>Build your authentic voice</p>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -662,6 +842,37 @@
                 <p class="skill-modal-hint">Sorted by effort (easiest first)</p>
                 <div id="skill-modal-available" class="skill-quest-list"></div>
             </div>
+        </div>
+    </div>
+
+    <!-- Weekly Summary Modal -->
+    <div id="weekly-summary-modal" class="modal">
+        <div class="modal-content summary-modal-content">
+            <div class="modal-header">
+                <h2>📊 Weekly Summary</h2>
+                <button class="modal-close" onclick="app.closeModal('weekly-summary-modal')">✕</button>
+            </div>
+            
+            <div class="summary-preview-container">
+                <canvas id="summary-canvas" width="1080" height="1920"></canvas>
+            </div>
+            
+            <div class="summary-actions">
+                <button class="primary-btn" onclick="app.downloadWeeklySummary()">📥 Download Image</button>
+                <button class="secondary-btn" onclick="app.closeModal('weekly-summary-modal')">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Special Badges Modal -->
+    <div id="badges-modal" class="modal">
+        <div class="modal-content badges-modal-content">
+            <div class="modal-header">
+                <h2>🏅 Special Badges</h2>
+                <button class="modal-close" onclick="app.closeModal('badges-modal')">✕</button>
+            </div>
+            
+            <div id="badges-container" class="badges-grid"></div>
         </div>
     </div>
 
