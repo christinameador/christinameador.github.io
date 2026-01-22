@@ -2695,16 +2695,16 @@ class LifeRPG {
             return;
         }
 
-        activeChallenges.forEach(challenge => {
-            const card = this.createChallengeCard(challenge);
-            container.appendChild(card);
+        activeChallenges.forEach((challenge, index) => {
+            const accordion = this.createChallengeAccordion(challenge, index === 0);
+            container.appendChild(accordion);
         });
     }
 
-    createChallengeCard(challenge) {
-        const card = document.createElement('div');
-        card.className = 'challenge-card';
-        card.dataset.challengeId = challenge.id;
+    createChallengeAccordion(challenge, expanded = false) {
+        const accordion = document.createElement('div');
+        accordion.className = `challenge-accordion ${expanded ? 'expanded' : ''}`;
+        accordion.dataset.challengeId = challenge.id;
 
         const completed = challenge.currentPeriod.completedQuests.length;
         const total = challenge.questIds.length;
@@ -2730,51 +2730,97 @@ class LifeRPG {
             timeStatus = `${daysLeft} days left`;
         }
 
-        // Quest checklist
+        // Quest checklist with clickable items
         const questsHtml = challenge.questIds.map(qId => {
             const quest = this.data.quests.find(q => q.id === qId);
             const done = challenge.currentPeriod.completedQuests.some(cq => cq.questId === qId);
+            const rewardText = quest?.rewards?.map(r => `+${r.xp} ${this.getSkillEmoji(r.skill)}`).join(' ') || '';
+            
             return `
-                <div class="challenge-quest ${done ? 'done' : ''}">
-                    <span class="quest-check">${done ? '✓' : '○'}</span>
+                <div class="challenge-quest-item ${done ? 'done' : 'available'}" 
+                     ${!done ? `onclick="app.completeQuestFromChallenge('${challenge.id}', '${qId}')"` : ''}>
+                    <span class="quest-checkbox">${done ? '✓' : '○'}</span>
                     <span class="quest-name">${quest?.name || qId}</span>
+                    <span class="quest-rewards">${rewardText}</span>
+                    ${!done ? '<span class="quest-action-hint">Tap to complete</span>' : ''}
                 </div>
             `;
         }).join('');
 
-        card.innerHTML = `
-            <div class="challenge-header">
-                <span class="challenge-icon">${challenge.icon}</span>
-                <div class="challenge-title">
-                    <h3>${challenge.name}</h3>
-                    <p class="challenge-description">${challenge.description}</p>
+        accordion.innerHTML = `
+            <div class="challenge-accordion-header" onclick="app.toggleChallengeAccordion('${challenge.id}')">
+                <div class="challenge-header-left">
+                    <span class="challenge-icon">${challenge.icon}</span>
+                    <div class="challenge-header-info">
+                        <h3>${challenge.name}</h3>
+                        <div class="challenge-mini-stats">
+                            <span class="mini-stat">🔥 ${challenge.currentStreak} streak</span>
+                            <span class="mini-stat ${timeClass}">${timeStatus}</span>
+                            <span class="mini-stat">${completed}/${total}</span>
+                        </div>
+                    </div>
                 </div>
-                <button class="end-challenge-btn" onclick="app.endChallenge('${challenge.id}')" title="End Challenge">✕</button>
+                <div class="challenge-header-right">
+                    <div class="mini-progress-ring">
+                        <svg viewBox="0 0 36 36">
+                            <path class="ring-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                            <path class="ring-fill" stroke-dasharray="${progressPercent}, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                        </svg>
+                    </div>
+                    <span class="accordion-arrow">▼</span>
+                </div>
             </div>
-            <div class="challenge-stats">
-                <div class="stat">
-                    <span class="stat-value">${challenge.currentStreak}</span>
-                    <span class="stat-label">Current Streak</span>
+            <div class="challenge-accordion-body">
+                <p class="challenge-description">${challenge.description}</p>
+                <div class="challenge-full-stats">
+                    <div class="stat-box">
+                        <span class="stat-value">${challenge.currentStreak}</span>
+                        <span class="stat-label">Current Streak</span>
+                    </div>
+                    <div class="stat-box">
+                        <span class="stat-value">${challenge.longestStreak}</span>
+                        <span class="stat-label">Best Streak</span>
+                    </div>
+                    <div class="stat-box ${timeClass}">
+                        <span class="stat-value">${timeStatus}</span>
+                        <span class="stat-label">This Period</span>
+                    </div>
                 </div>
-                <div class="stat">
-                    <span class="stat-value">${challenge.longestStreak}</span>
-                    <span class="stat-label">Best Streak</span>
-                </div>
-                <div class="stat ${timeClass}">
-                    <span class="stat-value">${timeStatus}</span>
-                    <span class="stat-label">This Period</span>
-                </div>
-            </div>
-            <div class="challenge-progress">
-                <div class="progress-bar">
+                <div class="challenge-progress-bar">
                     <div class="progress-fill" style="width: ${progressPercent}%"></div>
                 </div>
-                <span class="progress-text">${completed}/${total} complete</span>
+                <div class="challenge-quests-list">
+                    <h4>Today's Tasks</h4>
+                    ${questsHtml}
+                </div>
+                <div class="challenge-actions">
+                    <button class="danger-btn small" onclick="app.endChallenge('${challenge.id}')">End Challenge</button>
+                </div>
             </div>
-            <div class="challenge-quests">${questsHtml}</div>
         `;
 
-        return card;
+        return accordion;
+    }
+
+    toggleChallengeAccordion(challengeId) {
+        const accordion = document.querySelector(`.challenge-accordion[data-challenge-id="${challengeId}"]`);
+        if (accordion) {
+            accordion.classList.toggle('expanded');
+        }
+    }
+
+    completeQuestFromChallenge(challengeId, questId) {
+        // Complete the quest (this will also update the challenge)
+        this.completeQuest(questId);
+        
+        // Re-render challenges to show updated state
+        this.renderChallenges();
+        
+        // Re-expand the challenge we were working on
+        const accordion = document.querySelector(`.challenge-accordion[data-challenge-id="${challengeId}"]`);
+        if (accordion) {
+            accordion.classList.add('expanded');
+        }
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -3559,6 +3605,23 @@ class LifeRPG {
             });
         });
 
+        // Mobile navigation
+        document.querySelectorAll('.mobile-nav-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const view = e.currentTarget.dataset.view;
+                this.switchView(view);
+                this.toggleMobileMenu();
+            });
+        });
+
+        // Skill card clicks
+        document.querySelectorAll('.skill-card').forEach(card => {
+            card.addEventListener('click', (e) => {
+                const skill = e.currentTarget.dataset.skill;
+                this.openSkillModal(skill);
+            });
+        });
+
         // Quest filters
         document.querySelectorAll('[data-filter-type]').forEach(btn => {
             btn.addEventListener('click', (e) => {
@@ -3629,6 +3692,180 @@ class LifeRPG {
                 }
             });
         });
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // MOBILE MENU
+    // ═══════════════════════════════════════════════════════════════
+
+    toggleMobileMenu() {
+        const menu = document.getElementById('mobile-menu');
+        if (menu) {
+            menu.classList.toggle('active');
+            document.body.classList.toggle('menu-open');
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // SKILL DETAIL MODAL
+    // ═══════════════════════════════════════════════════════════════
+
+    openSkillModal(skillId) {
+        const skill = this.data.skills[skillId];
+        if (!skill) return;
+
+        const level = this.calculateLevel(skill.xp);
+        const xpForCurrentLevel = this.xpForLevel(level);
+        const xpForNextLevel = this.xpForLevel(level + 1);
+        const xpProgress = skill.xp - xpForCurrentLevel;
+        const xpNeeded = xpForNextLevel - xpForCurrentLevel;
+        const progressPercent = (xpProgress / xpNeeded) * 100;
+
+        // Update modal header
+        document.getElementById('skill-modal-icon').textContent = this.getSkillEmoji(skillId);
+        document.getElementById('skill-modal-name').textContent = this.getSkillName(skillId);
+        
+        // Update stats
+        document.getElementById('skill-modal-level').textContent = level;
+        document.getElementById('skill-modal-xp').textContent = skill.xp.toLocaleString();
+        document.getElementById('skill-modal-streak').textContent = skill.currentStreak || 0;
+        
+        // Update XP bar
+        document.getElementById('skill-modal-xp-fill').style.width = `${progressPercent}%`;
+        document.getElementById('skill-modal-xp-text').textContent = 
+            `${xpProgress.toLocaleString()} / ${xpNeeded.toLocaleString()} XP to level ${level + 1}`;
+
+        // Get recent completions for this skill
+        const recentCompletions = this.getRecentCompletionsForSkill(skillId, 5);
+        const recentHtml = recentCompletions.length > 0 
+            ? recentCompletions.map(c => `
+                <div class="skill-quest-item completed">
+                    <span class="quest-icon">✓</span>
+                    <span class="quest-name">${c.questName}</span>
+                    <span class="quest-xp">+${c.xp} XP</span>
+                    <span class="quest-date">${this.formatRelativeDate(c.timestamp)}</span>
+                </div>
+            `).join('')
+            : '<p class="empty-hint">No recent completions</p>';
+        document.getElementById('skill-modal-recent').innerHTML = recentHtml;
+
+        // Get available quests for this skill (sorted by XP ascending)
+        const availableQuests = this.getAvailableQuestsForSkill(skillId);
+        const availableHtml = availableQuests.length > 0
+            ? availableQuests.map(q => `
+                <div class="skill-quest-item available" onclick="app.completeQuestFromModal('${q.id}')">
+                    <span class="quest-icon">${this.getFrequencyIcon(q.frequency)}</span>
+                    <span class="quest-name">${q.name}</span>
+                    <span class="quest-xp">+${q.xp} XP</span>
+                    <span class="quest-action">Complete →</span>
+                </div>
+            `).join('')
+            : '<p class="empty-hint">No available quests for this skill</p>';
+        document.getElementById('skill-modal-available').innerHTML = availableHtml;
+
+        // Show modal
+        document.getElementById('skill-modal').classList.add('active');
+        document.body.classList.add('modal-open');
+    }
+
+    closeSkillModal() {
+        document.getElementById('skill-modal').classList.remove('active');
+        document.body.classList.remove('modal-open');
+    }
+
+    getRecentCompletionsForSkill(skillId, limit = 5) {
+        const completions = this.data.completionLog?.completions || [];
+        
+        return completions
+            .filter(c => {
+                // Check if this completion awarded XP to this skill
+                return c.xpAwarded?.some(xp => xp.skill === skillId);
+            })
+            .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+            .slice(0, limit)
+            .map(c => {
+                const quest = this.data.quests.find(q => q.id === c.questId);
+                const xpForSkill = c.xpAwarded?.find(xp => xp.skill === skillId)?.xp || 0;
+                return {
+                    questId: c.questId,
+                    questName: quest?.name || c.questId,
+                    xp: xpForSkill,
+                    timestamp: c.timestamp
+                };
+            });
+    }
+
+    getAvailableQuestsForSkill(skillId) {
+        const today = new Date().toDateString();
+        
+        return this.data.quests
+            .filter(q => {
+                // Must be active and reward this skill
+                if (!q.active) return false;
+                const rewardsSkill = q.rewards?.some(r => r.skill === skillId);
+                if (!rewardsSkill) return false;
+
+                // Check if already completed based on frequency
+                const isCompletedToday = this.data.completionLog?.completedToday?.includes(q.id);
+                const isCompletedThisWeek = this.data.completionLog?.completedThisWeek?.includes(q.id);
+                const isCompletedThisMonth = this.data.completionLog?.completedThisMonth?.includes(q.id);
+                const isCompletedEver = this.data.completionLog?.completedEver?.includes(q.id);
+
+                switch (q.frequency) {
+                    case 'daily': return !isCompletedToday;
+                    case 'weekly': return !isCompletedThisWeek;
+                    case 'monthly': return !isCompletedThisMonth;
+                    case 'one-time': return !isCompletedEver;
+                    case 'as-needed': return true;
+                    default: return true;
+                }
+            })
+            .map(q => {
+                const xpForSkill = q.rewards?.find(r => r.skill === skillId)?.xp || 0;
+                return { ...q, xp: xpForSkill };
+            })
+            .sort((a, b) => a.xp - b.xp); // Sort by XP ascending (easiest first)
+    }
+
+    getFrequencyIcon(frequency) {
+        const icons = {
+            'daily': '📅',
+            'weekly': '📆',
+            'monthly': '🗓️',
+            'as-needed': '🔄',
+            'one-time': '⭐'
+        };
+        return icons[frequency] || '📋';
+    }
+
+    formatRelativeDate(timestamp) {
+        const date = new Date(timestamp);
+        const now = new Date();
+        const diffMs = now - date;
+        const diffMins = Math.floor(diffMs / 60000);
+        const diffHours = Math.floor(diffMs / 3600000);
+        const diffDays = Math.floor(diffMs / 86400000);
+
+        if (diffMins < 1) return 'Just now';
+        if (diffMins < 60) return `${diffMins}m ago`;
+        if (diffHours < 24) return `${diffHours}h ago`;
+        if (diffDays < 7) return `${diffDays}d ago`;
+        return date.toLocaleDateString();
+    }
+
+    completeQuestFromModal(questId) {
+        this.completeQuest(questId);
+        // Refresh the modal with updated data
+        const skillId = document.getElementById('skill-modal-name').textContent.toLowerCase().replace(' ', '');
+        // Find the actual skill ID from the name
+        const skillEntry = Object.entries(this.data.skills).find(([id, data]) => 
+            this.getSkillName(id) === document.getElementById('skill-modal-name').textContent
+        );
+        if (skillEntry) {
+            this.openSkillModal(skillEntry[0]);
+        } else {
+            this.closeSkillModal();
+        }
     }
 
     switchView(viewName) {

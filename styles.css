@@ -55,9 +55,45 @@ body.modal-open {
     background: var(--osrs-dark);
     border-top: 3px solid var(--osrs-border);
     display: flex;
-    justify-content: space-around;
+    justify-content: space-between;
+    align-items: center;
     padding: 0.5rem;
     z-index: 1000;
+}
+
+.nav-scroll-container {
+    display: flex;
+    overflow-x: auto;
+    flex: 1;
+    gap: 0.25rem;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+.nav-scroll-container::-webkit-scrollbar {
+    display: none;
+}
+
+.hamburger-btn {
+    display: none;
+    background: var(--osrs-brown);
+    border: 2px solid var(--osrs-border);
+    color: var(--osrs-tan);
+    padding: 0.5rem 0.75rem;
+    font-size: 1.2rem;
+    cursor: pointer;
+    border-radius: 4px;
+    margin-left: 0.5rem;
+}
+
+@media (max-width: 600px) {
+    .hamburger-btn {
+        display: block;
+    }
+    
+    .nav-scroll-container {
+        max-width: calc(100% - 50px);
+    }
 }
 
 .nav-btn {
@@ -67,16 +103,73 @@ body.modal-open {
     padding: 0.5rem 1rem;
     font-size: 0.9rem;
     cursor: pointer;
-    flex: 1;
-    margin: 0 0.25rem;
+    flex-shrink: 0;
     border-radius: 4px;
     transition: all 0.2s;
+    white-space: nowrap;
 }
 
 .nav-btn:active, .nav-btn.active {
     background: var(--osrs-tan);
     color: var(--osrs-dark);
     border-color: var(--osrs-gold);
+}
+
+/* Mobile Menu Overlay */
+.mobile-menu-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.9);
+    z-index: 2000;
+    justify-content: center;
+    align-items: center;
+}
+
+.mobile-menu-overlay.active {
+    display: flex;
+}
+
+.mobile-menu-content {
+    background: var(--osrs-bg);
+    border: 3px solid var(--osrs-border);
+    border-radius: 12px;
+    padding: 2rem;
+    width: 90%;
+    max-width: 300px;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.mobile-menu-close {
+    align-self: flex-end;
+    background: none;
+    border: none;
+    color: var(--osrs-tan);
+    font-size: 1.5rem;
+    cursor: pointer;
+    margin-bottom: 1rem;
+}
+
+.mobile-nav-btn {
+    background: var(--osrs-brown);
+    border: 2px solid var(--osrs-border);
+    color: var(--osrs-tan);
+    padding: 1rem;
+    font-size: 1.1rem;
+    cursor: pointer;
+    border-radius: 8px;
+    text-align: left;
+    transition: all 0.2s;
+}
+
+.mobile-nav-btn:active {
+    background: var(--osrs-tan);
+    color: var(--osrs-dark);
 }
 
 /* Views */
@@ -153,12 +246,33 @@ body.modal-open {
     display: flex;
     gap: 1rem;
     cursor: pointer;
-    transition: transform 0.2s, border-color 0.2s;
+    transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+    position: relative;
+}
+
+.skill-card::after {
+    content: 'Tap for details';
+    position: absolute;
+    bottom: 4px;
+    right: 8px;
+    font-size: 0.65rem;
+    color: var(--osrs-tan);
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+.skill-card:hover::after {
+    opacity: 0.6;
 }
 
 .skill-card:hover {
     transform: translateY(-2px);
     border-color: var(--osrs-gold);
+    box-shadow: 0 4px 12px rgba(255, 215, 0, 0.2);
+}
+
+.skill-card:active {
+    transform: translateY(0);
 }
 
 .skill-icon {
@@ -2590,5 +2704,464 @@ textarea:focus {
     
     .photo-grid {
         grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   SKILL DETAIL MODAL
+   ═══════════════════════════════════════════════════════════════════ */
+
+.skill-modal-content {
+    max-width: 500px;
+}
+
+.skill-modal-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.skill-stat-big {
+    background: var(--osrs-dark);
+    padding: 1rem;
+    border-radius: 8px;
+    text-align: center;
+}
+
+.skill-stat-big .stat-value {
+    display: block;
+    font-size: 2rem;
+    color: var(--osrs-gold);
+    font-weight: bold;
+}
+
+.skill-stat-big .stat-label {
+    display: block;
+    font-size: 0.8rem;
+    color: var(--osrs-tan);
+    opacity: 0.8;
+}
+
+.skill-modal-xp-bar {
+    margin-bottom: 1.5rem;
+}
+
+.skill-modal-xp-bar .xp-bar.large {
+    height: 20px;
+    margin-bottom: 0.5rem;
+}
+
+.skill-modal-xp-bar .xp-text {
+    text-align: center;
+    color: var(--osrs-tan);
+    font-size: 0.9rem;
+}
+
+.skill-modal-section {
+    margin-bottom: 1.5rem;
+}
+
+.skill-modal-section h3 {
+    color: var(--osrs-gold);
+    margin-bottom: 0.75rem;
+    font-size: 1.1rem;
+}
+
+.skill-modal-hint {
+    font-size: 0.8rem;
+    color: var(--osrs-tan);
+    opacity: 0.7;
+    margin-bottom: 0.5rem;
+}
+
+.skill-quest-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.skill-quest-item {
+    display: grid;
+    grid-template-columns: auto 1fr auto auto;
+    gap: 0.75rem;
+    align-items: center;
+    padding: 0.75rem;
+    background: var(--osrs-dark);
+    border-radius: 6px;
+    border: 2px solid transparent;
+}
+
+.skill-quest-item.completed {
+    opacity: 0.8;
+}
+
+.skill-quest-item.available {
+    cursor: pointer;
+    border-color: var(--osrs-border);
+    transition: all 0.2s;
+}
+
+.skill-quest-item.available:hover {
+    border-color: var(--osrs-gold);
+    background: var(--osrs-brown);
+}
+
+.skill-quest-item .quest-icon {
+    font-size: 1.2rem;
+}
+
+.skill-quest-item .quest-name {
+    color: var(--osrs-light);
+    font-size: 0.9rem;
+}
+
+.skill-quest-item .quest-xp {
+    color: #4ade80;
+    font-weight: bold;
+    font-size: 0.85rem;
+}
+
+.skill-quest-item .quest-date {
+    color: var(--osrs-tan);
+    opacity: 0.7;
+    font-size: 0.8rem;
+}
+
+.skill-quest-item .quest-action {
+    color: var(--osrs-gold);
+    font-size: 0.85rem;
+}
+
+.skill-quest-item .quest-action-hint {
+    display: none;
+}
+
+@media (max-width: 600px) {
+    .skill-modal-stats {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 0.5rem;
+    }
+    
+    .skill-stat-big {
+        padding: 0.75rem 0.5rem;
+    }
+    
+    .skill-stat-big .stat-value {
+        font-size: 1.5rem;
+    }
+    
+    .skill-quest-item {
+        grid-template-columns: auto 1fr auto;
+    }
+    
+    .skill-quest-item .quest-date,
+    .skill-quest-item .quest-action {
+        display: none;
+    }
+    
+    .skill-quest-item .quest-action-hint {
+        display: block;
+        grid-column: 1 / -1;
+        text-align: center;
+        color: var(--osrs-tan);
+        font-size: 0.75rem;
+        opacity: 0.7;
+    }
+}
+
+.empty-hint {
+    color: var(--osrs-tan);
+    opacity: 0.6;
+    text-align: center;
+    padding: 1rem;
+    font-style: italic;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   CHALLENGE ACCORDION
+   ═══════════════════════════════════════════════════════════════════ */
+
+.challenge-accordion {
+    background: var(--osrs-brown);
+    border: 3px solid var(--osrs-border);
+    border-radius: 8px;
+    margin-bottom: 1rem;
+    overflow: hidden;
+}
+
+.challenge-accordion-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.challenge-accordion-header:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.challenge-header-left {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.challenge-header-left .challenge-icon {
+    font-size: 2rem;
+}
+
+.challenge-header-info h3 {
+    color: var(--osrs-gold);
+    margin-bottom: 0.25rem;
+}
+
+.challenge-mini-stats {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.mini-stat {
+    font-size: 0.8rem;
+    color: var(--osrs-tan);
+    opacity: 0.9;
+}
+
+.mini-stat.overdue {
+    color: #ef4444;
+}
+
+.mini-stat.due-today {
+    color: #f59e0b;
+}
+
+.mini-stat.due-soon {
+    color: #fbbf24;
+}
+
+.challenge-header-right {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.mini-progress-ring {
+    width: 40px;
+    height: 40px;
+}
+
+.mini-progress-ring svg {
+    transform: rotate(-90deg);
+}
+
+.mini-progress-ring .ring-bg {
+    fill: none;
+    stroke: var(--osrs-dark);
+    stroke-width: 3;
+}
+
+.mini-progress-ring .ring-fill {
+    fill: none;
+    stroke: var(--osrs-gold);
+    stroke-width: 3;
+    stroke-linecap: round;
+}
+
+.accordion-arrow {
+    color: var(--osrs-tan);
+    transition: transform 0.3s;
+}
+
+.challenge-accordion.expanded .accordion-arrow {
+    transform: rotate(180deg);
+}
+
+.challenge-accordion-body {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease-out;
+    background: var(--osrs-dark);
+}
+
+.challenge-accordion.expanded .challenge-accordion-body {
+    max-height: 800px;
+}
+
+.challenge-accordion-body > * {
+    padding-left: 1rem;
+    padding-right: 1rem;
+}
+
+.challenge-accordion-body .challenge-description {
+    color: var(--osrs-tan);
+    font-size: 0.9rem;
+    padding-top: 1rem;
+    padding-bottom: 0.75rem;
+    opacity: 0.8;
+}
+
+.challenge-full-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.75rem;
+    padding-bottom: 1rem;
+}
+
+.stat-box {
+    background: var(--osrs-brown);
+    padding: 0.75rem;
+    border-radius: 6px;
+    text-align: center;
+}
+
+.stat-box .stat-value {
+    display: block;
+    font-size: 1.25rem;
+    color: var(--osrs-gold);
+    font-weight: bold;
+}
+
+.stat-box .stat-label {
+    display: block;
+    font-size: 0.75rem;
+    color: var(--osrs-tan);
+    opacity: 0.8;
+}
+
+.stat-box.overdue .stat-value {
+    color: #ef4444;
+}
+
+.stat-box.due-today .stat-value {
+    color: #f59e0b;
+}
+
+.stat-box.due-soon .stat-value {
+    color: #fbbf24;
+}
+
+.challenge-progress-bar {
+    height: 8px;
+    background: var(--osrs-brown);
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 1rem;
+}
+
+.challenge-progress-bar .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--osrs-gold), #f59e0b);
+    transition: width 0.3s;
+}
+
+.challenge-quests-list {
+    padding-bottom: 1rem;
+}
+
+.challenge-quests-list h4 {
+    color: var(--osrs-tan);
+    font-size: 0.9rem;
+    margin-bottom: 0.75rem;
+}
+
+.challenge-quest-item {
+    display: grid;
+    grid-template-columns: auto 1fr auto auto;
+    gap: 0.75rem;
+    align-items: center;
+    padding: 0.75rem;
+    background: var(--osrs-brown);
+    border-radius: 6px;
+    margin-bottom: 0.5rem;
+    border: 2px solid transparent;
+    transition: all 0.2s;
+}
+
+.challenge-quest-item.done {
+    opacity: 0.6;
+}
+
+.challenge-quest-item.done .quest-checkbox {
+    color: #4ade80;
+}
+
+.challenge-quest-item.available {
+    cursor: pointer;
+    border-color: var(--osrs-border);
+}
+
+.challenge-quest-item.available:hover {
+    border-color: var(--osrs-gold);
+    transform: translateX(4px);
+}
+
+.challenge-quest-item .quest-checkbox {
+    font-size: 1.25rem;
+    width: 24px;
+    text-align: center;
+}
+
+.challenge-quest-item .quest-name {
+    color: var(--osrs-light);
+}
+
+.challenge-quest-item .quest-rewards {
+    font-size: 0.85rem;
+    color: #4ade80;
+}
+
+.challenge-quest-item .quest-action-hint {
+    font-size: 0.75rem;
+    color: var(--osrs-tan);
+    opacity: 0.7;
+}
+
+.challenge-actions {
+    padding-top: 0.5rem;
+    padding-bottom: 1rem;
+    display: flex;
+    justify-content: flex-end;
+}
+
+.danger-btn.small {
+    padding: 0.5rem 1rem;
+    font-size: 0.85rem;
+}
+
+@media (max-width: 600px) {
+    .challenge-header-left {
+        gap: 0.75rem;
+    }
+    
+    .challenge-header-left .challenge-icon {
+        font-size: 1.5rem;
+    }
+    
+    .challenge-mini-stats {
+        flex-direction: column;
+        gap: 0.25rem;
+    }
+    
+    .mini-progress-ring {
+        width: 32px;
+        height: 32px;
+    }
+    
+    .challenge-full-stats {
+        grid-template-columns: 1fr;
+        gap: 0.5rem;
+    }
+    
+    .challenge-quest-item {
+        grid-template-columns: auto 1fr auto;
+    }
+    
+    .challenge-quest-item .quest-action-hint {
+        display: none;
     }
 }

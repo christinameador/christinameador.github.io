@@ -13,20 +13,37 @@
     <div class="app-container">
         <!-- Navigation -->
         <nav class="main-nav">
-            <button class="nav-btn active" data-view="character">Character</button>
-            <button class="nav-btn" data-view="quests">Quests</button>
-            <button class="nav-btn" data-view="paths">Paths</button>
-            <button class="nav-btn" data-view="challenges">Challenges</button>
-            <button class="nav-btn" data-view="collection">📸</button>
-            <button class="nav-btn" data-view="achievements">🏆</button>
-            <button class="nav-btn" data-view="settings">⚙️</button>
+            <div class="nav-scroll-container">
+                <button class="nav-btn active" data-view="character">Character</button>
+                <button class="nav-btn" data-view="quests">Quests</button>
+                <button class="nav-btn" data-view="paths">Paths</button>
+                <button class="nav-btn" data-view="challenges">Challenges</button>
+                <button class="nav-btn" data-view="collection">📸</button>
+                <button class="nav-btn" data-view="achievements">🏆</button>
+                <button class="nav-btn" data-view="settings">⚙️</button>
+            </div>
+            <button class="hamburger-btn" onclick="app.toggleMobileMenu()">☰</button>
         </nav>
+
+        <!-- Mobile Menu Overlay -->
+        <div id="mobile-menu" class="mobile-menu-overlay">
+            <div class="mobile-menu-content">
+                <button class="mobile-menu-close" onclick="app.toggleMobileMenu()">✕</button>
+                <button class="mobile-nav-btn" data-view="character">👤 Character</button>
+                <button class="mobile-nav-btn" data-view="quests">⚔️ Quests</button>
+                <button class="mobile-nav-btn" data-view="paths">🛤️ Paths</button>
+                <button class="mobile-nav-btn" data-view="challenges">🎯 Challenges</button>
+                <button class="mobile-nav-btn" data-view="collection">📸 Collection</button>
+                <button class="mobile-nav-btn" data-view="achievements">🏆 Achievements</button>
+                <button class="mobile-nav-btn" data-view="settings">⚙️ Settings</button>
+            </div>
+        </div>
 
         <!-- Character Sheet View -->
         <div id="character-view" class="view active">
             <div class="character-header">
-                <h1>Quest Log: IRL</h1>
-                <div class="total-level">Total Level: <span id="total-level">6</span></div>
+                <h1>Christina's Adventure</h1>
+                <div class="total-level">Total Level: <span id="total-level">10</span></div>
                 <div class="daily-progress">Today's XP: <span id="daily-xp">0</span></div>
             </div>
 
@@ -601,6 +618,49 @@
             <div class="lightbox-info">
                 <span id="lightbox-source"></span>
                 <p id="lightbox-caption"></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Skill Detail Modal -->
+    <div id="skill-modal" class="modal">
+        <div class="modal-content skill-modal-content">
+            <div class="modal-header">
+                <h2><span id="skill-modal-icon"></span> <span id="skill-modal-name"></span></h2>
+                <button class="modal-close" onclick="app.closeSkillModal()">✕</button>
+            </div>
+            
+            <div class="skill-modal-stats">
+                <div class="skill-stat-big">
+                    <span class="stat-value" id="skill-modal-level">1</span>
+                    <span class="stat-label">Level</span>
+                </div>
+                <div class="skill-stat-big">
+                    <span class="stat-value" id="skill-modal-xp">0</span>
+                    <span class="stat-label">Total XP</span>
+                </div>
+                <div class="skill-stat-big">
+                    <span class="stat-value" id="skill-modal-streak">0</span>
+                    <span class="stat-label">Day Streak</span>
+                </div>
+            </div>
+
+            <div class="skill-modal-xp-bar">
+                <div class="xp-bar large">
+                    <div class="xp-fill" id="skill-modal-xp-fill" style="width: 0%"></div>
+                </div>
+                <div class="xp-text" id="skill-modal-xp-text">0 / 83 XP to next level</div>
+            </div>
+
+            <div class="skill-modal-section">
+                <h3>📜 Recent Completions</h3>
+                <div id="skill-modal-recent" class="skill-quest-list"></div>
+            </div>
+
+            <div class="skill-modal-section">
+                <h3>⚔️ Available Quests</h3>
+                <p class="skill-modal-hint">Sorted by effort (easiest first)</p>
+                <div id="skill-modal-available" class="skill-quest-list"></div>
             </div>
         </div>
     </div>
