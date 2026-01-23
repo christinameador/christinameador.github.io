@@ -4047,3 +4047,599 @@ textarea:focus {
     transform: translateX(3px);
     background: rgba(239, 68, 68, 0.1);
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+   ONBOARDING SYSTEM
+   ═══════════════════════════════════════════════════════════════════ */
+
+.onboarding-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, #1a0f0a 0%, #2b1810 100%);
+    z-index: 10000;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    overflow-y: auto;
+    padding: 2rem 1rem;
+}
+
+.onboarding-overlay.active {
+    display: flex;
+}
+
+.onboarding-container {
+    max-width: 600px;
+    width: 100%;
+    background: rgba(43, 24, 16, 0.95);
+    border: 2px solid var(--osrs-gold);
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+}
+
+.onboarding-progress {
+    text-align: center;
+    margin-bottom: 1.5rem;
+}
+
+.progress-dots {
+    display: flex;
+    justify-content: center;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.progress-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.2);
+    transition: all 0.3s;
+}
+
+.progress-dot.active {
+    background: var(--osrs-gold);
+    transform: scale(1.2);
+}
+
+.progress-text {
+    color: var(--osrs-tan);
+    font-size: 0.85rem;
+}
+
+.onboarding-content {
+    min-height: 350px;
+    margin-bottom: 1.5rem;
+}
+
+.onboarding-step-content {
+    animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.onboarding-icon {
+    font-size: 4rem;
+    text-align: center;
+    margin-bottom: 1rem;
+}
+
+.onboarding-step-content h1,
+.onboarding-step-content h2 {
+    color: var(--osrs-gold);
+    text-align: center;
+    margin-bottom: 0.5rem;
+    line-height: 1.2;
+}
+
+.onboarding-step-content h1 {
+    font-size: 1.75rem;
+}
+
+.onboarding-step-content h2 {
+    font-size: 1.4rem;
+}
+
+.subtitle {
+    text-align: center;
+    color: var(--osrs-tan);
+    margin-bottom: 1.25rem;
+    font-size: 0.95rem;
+}
+
+.optional-note {
+    font-style: italic;
+    font-size: 0.85rem;
+    opacity: 0.8;
+}
+
+.form-group {
+    margin-bottom: 1.25rem;
+}
+
+.form-group label {
+    display: block;
+    color: var(--osrs-tan);
+    margin-bottom: 0.5rem;
+    font-weight: bold;
+    font-size: 0.95rem;
+}
+
+.form-input {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    background: rgba(0, 0, 0, 0.3);
+    border: 2px solid rgba(212, 175, 55, 0.3);
+    border-radius: 8px;
+    color: var(--osrs-tan);
+    font-size: 1rem;
+    font-family: inherit;
+    transition: all 0.3s;
+}
+
+.form-input:focus {
+    outline: none;
+    border-color: var(--osrs-gold);
+    background: rgba(0, 0, 0, 0.4);
+    box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.1);
+}
+
+.form-input::placeholder {
+    color: rgba(201, 169, 98, 0.5);
+}
+
+/* Number inputs - make more compact */
+.form-group input[type="number"] {
+    width: auto;
+    min-width: 80px;
+    padding: 0.5rem 0.75rem;
+}
+
+/* Goal Selection */
+.goal-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 0.75rem;
+    margin-top: 1rem;
+}
+
+.goal-card {
+    background: rgba(0, 0, 0, 0.3);
+    border: 2px solid rgba(212, 175, 55, 0.3);
+    border-radius: 12px;
+    padding: 1rem 0.75rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.goal-card:hover {
+    border-color: var(--osrs-gold);
+    transform: translateY(-2px);
+}
+
+.goal-card.selected {
+    background: linear-gradient(135deg, rgba(212, 175, 55, 0.2) 0%, rgba(184, 134, 11, 0.2) 100%);
+    border-color: var(--osrs-gold);
+    box-shadow: 0 4px 12px rgba(212, 175, 55, 0.3);
+}
+
+.goal-icon {
+    font-size: 2.25rem;
+    margin-bottom: 0.5rem;
+}
+
+.goal-name {
+    color: var(--osrs-tan);
+    font-size: 0.85rem;
+    line-height: 1.2;
+}
+
+/* Frequency Options */
+.frequency-options {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin-top: 1rem;
+}
+
+.frequency-option {
+    cursor: pointer;
+}
+
+.frequency-option input[type="radio"] {
+    display: none;
+}
+
+.frequency-card {
+    background: rgba(0, 0, 0, 0.3);
+    border: 2px solid rgba(212, 175, 55, 0.3);
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    transition: all 0.3s;
+}
+
+.frequency-option input[type="radio"]:checked + .frequency-card {
+    background: linear-gradient(135deg, rgba(212, 175, 55, 0.2) 0%, rgba(184, 134, 11, 0.2) 100%);
+    border-color: var(--osrs-gold);
+    box-shadow: 0 4px 12px rgba(212, 175, 55, 0.3);
+    transform: translateX(5px);
+}
+
+.frequency-card:hover {
+    border-color: var(--osrs-gold);
+    transform: translateX(3px);
+}
+
+.frequency-title {
+    color: var(--osrs-gold);
+    font-weight: bold;
+    margin-bottom: 0.25rem;
+    font-size: 0.95rem;
+}
+
+.frequency-desc {
+    color: var(--osrs-tan);
+    font-size: 0.85rem;
+    opacity: 0.9;
+}
+
+/* Form Sections */
+.form-section {
+    margin-bottom: 1.25rem;
+}
+
+.form-section label {
+    display: block;
+    color: var(--osrs-tan);
+    margin-bottom: 0.5rem;
+    font-weight: bold;
+    font-size: 0.95rem;
+}
+
+.radio-group,
+.checkbox-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.radio-group label,
+.checkbox-group label {
+    display: flex;
+    align-items: center;
+    color: var(--osrs-tan);
+    font-weight: normal;
+    cursor: pointer;
+    padding: 0.6rem 0.75rem;
+    border-radius: 6px;
+    transition: all 0.2s;
+    background: rgba(0, 0, 0, 0.2);
+    border: 2px solid transparent;
+}
+
+.radio-group label:hover,
+.checkbox-group label:hover {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(212, 175, 55, 0.3);
+}
+
+.radio-group input[type="radio"],
+.checkbox-group input[type="checkbox"] {
+    margin-right: 0.75rem;
+    cursor: pointer;
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+}
+
+/* Add wrapper for text to handle wrapping properly */
+.radio-group label > *:not(input),
+.checkbox-group label > *:not(input) {
+    flex: 1;
+}
+
+/* Better visual for checked state */
+.radio-group label:has(input:checked),
+.checkbox-group label:has(input:checked) {
+    background: rgba(212, 175, 55, 0.15);
+    border-color: var(--osrs-gold);
+}
+
+.radio-group label:has(input:checked),
+.checkbox-group label:has(input:checked) {
+    color: var(--osrs-gold);
+}
+
+.form-helper {
+    margin-top: 0.75rem;
+    padding: 0.75rem;
+    background: rgba(76, 175, 80, 0.1);
+    border-left: 3px solid #4caf50;
+    color: var(--osrs-tan);
+    font-size: 0.85rem;
+    border-radius: 4px;
+}
+
+/* Summary */
+.summary-box {
+    background: rgba(0, 0, 0, 0.3);
+    border: 2px solid rgba(212, 175, 55, 0.3);
+    border-radius: 12px;
+    padding: 1rem;
+    margin: 1rem 0;
+}
+
+.summary-item {
+    color: var(--osrs-tan);
+    padding: 0.5rem 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    font-size: 0.95rem;
+}
+
+.summary-item:last-child {
+    border-bottom: none;
+}
+
+.summary-item strong {
+    color: var(--osrs-gold);
+}
+
+.benefits-box {
+    background: rgba(76, 175, 80, 0.1);
+    border: 2px solid rgba(76, 175, 80, 0.3);
+    border-radius: 12px;
+    padding: 1rem;
+    margin: 1rem 0;
+}
+
+.benefits-box h3 {
+    color: var(--osrs-gold);
+    margin-bottom: 0.75rem;
+    font-size: 1.1rem;
+}
+
+.benefits-box ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.benefits-box li {
+    color: var(--osrs-tan);
+    padding: 0.4rem 0;
+    padding-left: 1.5rem;
+    font-size: 0.9rem;
+    line-height: 1.4;
+}
+
+.settings-note {
+    text-align: center;
+    color: var(--osrs-tan);
+    font-size: 0.8rem;
+    font-style: italic;
+    margin-top: 1rem;
+    opacity: 0.8;
+}
+
+/* Navigation */
+.onboarding-nav {
+    display: flex;
+    gap: 1rem;
+    justify-content: space-between;
+}
+
+.onboarding-nav .primary-btn,
+.onboarding-nav .secondary-btn {
+    flex: 1;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   WELCOME SCREEN
+   ═══════════════════════════════════════════════════════════════════ */
+
+.welcome-screen-modal {
+    z-index: 9999;
+}
+
+.welcome-screen-content {
+    max-width: 700px;
+    max-height: 90vh;
+    overflow-y: auto;
+    background: linear-gradient(135deg, #1a0f0a 0%, #2b1810 100%);
+    border: 3px solid var(--osrs-gold);
+}
+
+.welcome-header {
+    text-align: center;
+    margin-bottom: 1.5rem;
+}
+
+.welcome-header h1 {
+    color: var(--osrs-gold);
+    font-size: 2rem;
+    margin-bottom: 1rem;
+}
+
+.welcome-stats {
+    display: flex;
+    justify-content: center;
+    gap: 2rem;
+    flex-wrap: wrap;
+}
+
+.stat-item {
+    color: var(--osrs-tan);
+    font-size: 1.1rem;
+    font-weight: bold;
+}
+
+.welcome-divider {
+    height: 2px;
+    background: linear-gradient(90deg, transparent 0%, var(--osrs-gold) 50%, transparent 100%);
+    margin: 1.5rem 0;
+}
+
+.welcome-body {
+    margin: 1.5rem 0;
+}
+
+.welcome-intro {
+    color: var(--osrs-gold);
+    font-size: 1.2rem;
+    margin-bottom: 1.5rem;
+    font-weight: bold;
+}
+
+.welcome-section {
+    margin-bottom: 2rem;
+}
+
+.welcome-section h3 {
+    color: var(--osrs-gold);
+    font-size: 1.1rem;
+    margin-bottom: 0.75rem;
+}
+
+.welcome-quest-list {
+    background: rgba(0, 0, 0, 0.3);
+    border: 2px solid rgba(212, 175, 55, 0.2);
+    border-radius: 8px;
+    padding: 1rem;
+}
+
+.welcome-quest-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem;
+    margin-bottom: 0.5rem;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.welcome-quest-item:last-child {
+    margin-bottom: 0;
+}
+
+.welcome-quest-item:hover {
+    background: rgba(212, 175, 55, 0.2);
+    transform: translateX(5px);
+}
+
+.quest-name {
+    color: var(--osrs-tan);
+    flex: 1;
+}
+
+.quest-xp {
+    color: var(--osrs-gold);
+    font-weight: bold;
+    margin-left: 1rem;
+}
+
+.welcome-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    margin-top: 2rem;
+}
+
+.welcome-actions .primary-btn,
+.welcome-actions .secondary-btn {
+    flex: 1;
+    max-width: 200px;
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+    .onboarding-container {
+        padding: 1.25rem 1rem;
+        margin: 1rem;
+    }
+    
+    .goal-grid {
+        grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+        gap: 0.6rem;
+    }
+    
+    .goal-icon {
+        font-size: 1.8rem;
+    }
+    
+    .goal-name {
+        font-size: 0.8rem;
+    }
+    
+    .onboarding-icon {
+        font-size: 2.5rem;
+    }
+    
+    .onboarding-step-content h1 {
+        font-size: 1.5rem;
+    }
+    
+    .onboarding-step-content h2 {
+        font-size: 1.2rem;
+    }
+    
+    .onboarding-content {
+        min-height: 300px;
+    }
+    
+    .frequency-card {
+        padding: 0.65rem 0.85rem;
+    }
+    
+    .frequency-title {
+        font-size: 0.9rem;
+    }
+    
+    .frequency-desc {
+        font-size: 0.8rem;
+    }
+    
+    .radio-group label,
+    .checkbox-group label {
+        padding: 0.5rem 0.65rem;
+        font-size: 0.9rem;
+    }
+    
+    .form-input {
+        padding: 0.65rem 0.85rem;
+        font-size: 0.95rem;
+    }
+    
+    .welcome-stats {
+        gap: 1rem;
+        font-size: 0.9rem;
+    }
+    
+    .welcome-header h1 {
+        font-size: 1.5rem;
+    }
+    
+    .welcome-actions {
+        flex-direction: column;
+    }
+    
+    .welcome-actions .primary-btn,
+    .welcome-actions .secondary-btn {
+        max-width: 100%;
+    }
+}

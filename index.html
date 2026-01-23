@@ -902,6 +902,73 @@
     <!-- Toast Container -->
     <div id="toast-container"></div>
 
+    <!-- Onboarding Overlay -->
+    <div id="onboarding-overlay" class="onboarding-overlay">
+        <div class="onboarding-container">
+            <div class="onboarding-progress">
+                <div class="progress-dots">
+                    <span class="progress-dot active"></span>
+                    <span class="progress-dot"></span>
+                    <span class="progress-dot"></span>
+                    <span class="progress-dot"></span>
+                    <span class="progress-dot"></span>
+                    <span class="progress-dot"></span>
+                    <span class="progress-dot"></span>
+                </div>
+                <div class="progress-text" id="step-number">Step 1 of 7</div>
+            </div>
+            
+            <div id="onboarding-content" class="onboarding-content">
+                <!-- Step content will be injected here -->
+            </div>
+            
+            <div class="onboarding-nav">
+                <button class="secondary-btn" onclick="app.onboardingBack()" id="onboarding-back-btn">
+                    ← Back
+                </button>
+                <button class="secondary-btn" onclick="app.onboardingSkip()" id="onboarding-skip-btn" style="display: none;">
+                    Skip
+                </button>
+                <button class="primary-btn" onclick="app.onboardingNext()" id="onboarding-next-btn">
+                    Continue →
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Welcome Screen Modal -->
+    <div id="welcome-screen-modal" class="modal welcome-screen-modal">
+        <div class="modal-content welcome-screen-content">
+            <button class="modal-close" onclick="app.closeWelcomeScreen()">✕</button>
+            
+            <div class="welcome-header">
+                <h1 id="welcome-greeting">Good Morning!</h1>
+                <div id="welcome-stats" class="welcome-stats"></div>
+            </div>
+            
+            <div class="welcome-divider"></div>
+            
+            <div class="welcome-body">
+                <p class="welcome-intro">Let's make today great:</p>
+                
+                <div id="welcome-quick-wins" class="welcome-section"></div>
+                <div id="welcome-focus-tasks" class="welcome-section"></div>
+                <div id="welcome-challenges" class="welcome-section"></div>
+            </div>
+            
+            <div class="welcome-divider"></div>
+            
+            <div class="welcome-actions">
+                <button class="secondary-btn" onclick="app.switchView('quests'); app.closeWelcomeScreen();">
+                    View All Quests
+                </button>
+                <button class="primary-btn" onclick="app.closeWelcomeScreen()">
+                    Let's Go! →
+                </button>
+            </div>
+        </div>
+    </div>
+
     <script src="app.js"></script>
     <script>
         if ('serviceWorker' in navigator) {

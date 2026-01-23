@@ -8,18 +8,37 @@ class LifeRPG {
     }
 
     init() {
+        console.log('🚀 Init starting...');
         this.currentTypeFilter = 'all';
         this.currentPathFilter = 'all';
         this.currentStatusFilter = 'upcoming';
         this.loadData();
         this.initSoundSystem();
         this.setupEventListeners();
+        
+        // Check if onboarding is needed
+        console.log('📋 Checking onboarding status...');
+        console.log('  - Profile exists:', !!this.data.settings.profile);
+        console.log('  - Onboarding completed:', this.data.settings.profile?.onboardingCompleted);
+        
+        if (!this.data.settings.profile || !this.data.settings.profile.onboardingCompleted) {
+            console.log('✅ Onboarding needed! Showing onboarding...');
+            this.showOnboarding();
+            return; // Don't run normal init flow
+        }
+        
+        console.log('⏭️ Onboarding not needed, continuing normal init...');
         this.checkResets();
         this.checkLoginStreak();
         this.checkComebackBonus();
         this.renderAll();
         this.updateProgressRings();
         this.checkSkillDecayWarnings();
+        
+        // Show welcome screen if appropriate
+        if (this.shouldShowWelcome()) {
+            setTimeout(() => this.showWelcomeScreen(), 500);
+        }
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -325,12 +344,17 @@ class LifeRPG {
     // ═══════════════════════════════════════════════════════════════
 
     loadData() {
+        console.log('📂 Loading data...');
         const saved = localStorage.getItem('lifeRPGData');
         if (saved) {
+            console.log('✅ Found saved data, parsing and migrating...');
             this.data = JSON.parse(saved);
             this.migrateData();
         } else {
+            console.log('📝 No saved data, creating default data...');
             this.data = this.getDefaultData();
+            console.log('Created default data. Profile exists:', !!this.data.settings.profile);
+            console.log('Profile onboarding completed:', this.data.settings.profile?.onboardingCompleted);
         }
     }
 
@@ -356,7 +380,40 @@ class LifeRPG {
             settings: {
                 characterName: 'Christina',
                 partnerName: 'Your Partner',
-                soundEnabled: true
+                soundEnabled: true,
+                
+                profile: {
+                    // Basic Info
+                    name: null,
+                    
+                    // Goals & Paths
+                    primaryGoals: [],
+                    activePaths: [],
+                    
+                    // Usage
+                    usageFrequency: null,
+                    
+                    // Demographics (optional)
+                    gender: null,
+                    ageRange: null,
+                    
+                    // Relationships
+                    relationshipStatus: null,
+                    partnerName: null,
+                    hasChildren: false,
+                    numberOfChildren: 0,
+                    childrenAges: [],
+                    caregivingResponsibilities: [],
+                    
+                    // Life Situation
+                    workSituation: null,
+                    livingSituation: null,
+                    
+                    // Metadata
+                    onboardingCompleted: false,
+                    onboardingDate: null,
+                    lastWelcomeScreen: null
+                }
             },
             
             skills: {
@@ -1668,6 +1725,44 @@ class LifeRPG {
         // Apply partner name to quests if it's been customized
         if (this.data.settings.partnerName && this.data.settings.partnerName !== 'Your Partner') {
             this.updatePartnerQuestNames();
+        }
+
+        // Ensure profile exists (for all versions) - NEW for v1.3
+        if (!this.data.settings.profile) {
+            console.log('Profile missing, creating one...');
+            
+            // Detect if this is truly a new user or an existing user without a profile
+            const hasProgress = 
+                this.data.completionLog?.completions?.length > 0 ||
+                Object.values(this.data.skills || {}).some(skill => skill.xp > 0) ||
+                (this.data.loginStreak?.current || 0) > 0;
+            
+            this.data.settings.profile = {
+                // Migrate existing data if available
+                name: this.data.settings.characterName || null,
+                partnerName: this.data.settings.partnerName || null,
+                
+                // Set defaults
+                primaryGoals: [],
+                activePaths: [],
+                usageFrequency: null,
+                gender: null,
+                ageRange: null,
+                relationshipStatus: this.data.settings.partnerName && this.data.settings.partnerName !== 'Your Partner' ? 'relationship' : null,
+                hasChildren: false,
+                numberOfChildren: 0,
+                childrenAges: [],
+                caregivingResponsibilities: [],
+                workSituation: null,
+                livingSituation: null,
+                
+                // Only mark onboarding as completed if user has actual progress
+                onboardingCompleted: hasProgress,
+                onboardingDate: hasProgress ? new Date().toISOString() : null,
+                lastWelcomeScreen: null
+            };
+            
+            console.log('Profile created. Has progress:', hasProgress, '→ Skip onboarding:', hasProgress);
         }
 
         // Always rebuild completion caches after loading
@@ -4660,7 +4755,7 @@ class LifeRPG {
         reader.readAsText(file);
     }
 
-    resetAllData() {
+    async resetAllData() {
         if (!confirm('⚠️ This will DELETE ALL your data! Are you sure?')) {
             return;
         }
@@ -4669,8 +4764,36 @@ class LifeRPG {
             return;
         }
 
-        localStorage.removeItem('lifeRPGData');
-        location.reload();
+        try {
+            // Clear localStorage
+            localStorage.removeItem('lifeRPGData');
+            localStorage.clear();
+            sessionStorage.clear();
+            
+            // Unregister service workers
+            if ('serviceWorker' in navigator) {
+                const registrations = await navigator.serviceWorker.getRegistrations();
+                for (let registration of registrations) {
+                    await registration.unregister();
+                }
+            }
+            
+            // Clear all caches
+            if ('caches' in window) {
+                const cacheNames = await caches.keys();
+                for (let cacheName of cacheNames) {
+                    await caches.delete(cacheName);
+                }
+            }
+            
+            // Hard reload to get fresh files
+            location.reload(true);
+        } catch (error) {
+            console.error('Error clearing data:', error);
+            // Fallback to simple reload
+            localStorage.removeItem('lifeRPGData');
+            location.reload(true);
+        }
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -5097,6 +5220,862 @@ class LifeRPG {
         this.data.settings.soundEnabled = this.soundEnabled;
         this.saveData();
         this.showToast(this.soundEnabled ? '🔊 Sound enabled' : '🔇 Sound disabled', 'info');
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // ONBOARDING SYSTEM
+    // ═══════════════════════════════════════════════════════════════
+
+    showOnboarding() {
+        console.log('🎮 showOnboarding() called');
+        const overlay = document.getElementById('onboarding-overlay');
+        if (!overlay) {
+            console.error('❌ ERROR: Onboarding overlay element not found in DOM!');
+            console.log('This means the HTML is not deployed correctly.');
+            return;
+        }
+        console.log('✅ Onboarding overlay found');
+
+        this.onboardingStep = 1;
+        this.onboardingData = {
+            name: '',
+            primaryGoals: [],
+            usageFrequency: '',
+            gender: null,
+            ageRange: null,
+            relationshipStatus: null,
+            partnerName: '',
+            hasChildren: false,
+            numberOfChildren: 0,
+            childrenAges: [],
+            caregivingResponsibilities: [],
+            workSituation: null,
+            livingSituation: null
+        };
+
+        overlay.classList.add('active');
+        console.log('✅ Added "active" class to overlay');
+        console.log('Overlay display:', window.getComputedStyle(overlay).display);
+        
+        this.renderOnboardingStep(1);
+        console.log('✅ Rendered step 1');
+    }
+
+    renderOnboardingStep(step) {
+        this.onboardingStep = step;
+        
+        // Update progress
+        document.querySelectorAll('.onboarding-step').forEach((el, index) => {
+            el.classList.toggle('active', index + 1 === step);
+        });
+        
+        const dots = document.querySelectorAll('.progress-dot');
+        dots.forEach((dot, index) => {
+            dot.classList.toggle('active', index < step);
+        });
+        
+        document.getElementById('step-number').textContent = `Step ${step} of 7`;
+        
+        // Control button visibility
+        const backBtn = document.getElementById('onboarding-back-btn');
+        const skipBtn = document.getElementById('onboarding-skip-btn');
+        const nextBtn = document.getElementById('onboarding-next-btn');
+        
+        backBtn.style.display = step > 1 ? 'block' : 'none';
+        skipBtn.style.display = (step >= 4 && step <= 6) ? 'block' : 'none';
+        
+        if (step === 7) {
+            nextBtn.textContent = 'Start My Adventure! 🚀';
+            nextBtn.classList.add('adventure-btn');
+        } else {
+            nextBtn.textContent = 'Continue →';
+            nextBtn.classList.remove('adventure-btn');
+        }
+        
+        // Render specific step content
+        const contentEl = document.getElementById('onboarding-content');
+        contentEl.innerHTML = this.getOnboardingStepHTML(step);
+        
+        // Pre-fill form if returning to step
+        this.prefillOnboardingStep(step);
+    }
+
+    getOnboardingStepHTML(step) {
+        switch (step) {
+            case 1: return this.getStep1HTML();
+            case 2: return this.getStep2HTML();
+            case 3: return this.getStep3HTML();
+            case 4: return this.getStep4HTML();
+            case 5: return this.getStep5HTML();
+            case 6: return this.getStep6HTML();
+            case 7: return this.getStep7HTML();
+            default: return '';
+        }
+    }
+
+    getStep1HTML() {
+        return `
+            <div class="onboarding-step-content">
+                <div class="onboarding-icon">🎮</div>
+                <h1>Welcome to Life RPG!</h1>
+                <p class="subtitle">Your life is about to become an epic adventure.</p>
+                
+                <div class="form-group">
+                    <label for="onboarding-name">What should we call you?</label>
+                    <input type="text" id="onboarding-name" class="form-input" 
+                           placeholder="Enter your name..." maxlength="50" required>
+                </div>
+            </div>
+        `;
+    }
+
+    getStep2HTML() {
+        const goals = [
+            { id: 'fitness', icon: '💪', name: 'Get Fit & Healthy' },
+            { id: 'business', icon: '🚀', name: 'Build My Business' },
+            { id: 'creativity', icon: '🎨', name: 'Express Creativity' },
+            { id: 'relationships', icon: '💕', name: 'Strengthen Relationships' },
+            { id: 'inner-peace', icon: '🧘', name: 'Find Inner Peace' },
+            { id: 'home', icon: '🏠', name: 'Create Beautiful Home' },
+            { id: 'influence', icon: '📸', name: 'Share My Journey' },
+            { id: 'giving', icon: '🤝', name: 'Give Back & Help' },
+            { id: 'cooking', icon: '🍳', name: 'Master Cooking' }
+        ];
+
+        return `
+            <div class="onboarding-step-content">
+                <h2>What are your main goals?</h2>
+                <p class="subtitle">Select all that apply (pick 1-5):</p>
+                
+                <div class="goal-grid">
+                    ${goals.map(goal => `
+                        <div class="goal-card" data-goal="${goal.id}">
+                            <div class="goal-icon">${goal.icon}</div>
+                            <div class="goal-name">${goal.name}</div>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+        `;
+    }
+
+    getStep3HTML() {
+        return `
+            <div class="onboarding-step-content">
+                <h2>How often do you want to check in?</h2>
+                <p class="subtitle">This helps us recommend quests that fit your lifestyle.</p>
+                
+                <div class="frequency-options">
+                    <label class="frequency-option">
+                        <input type="radio" name="frequency" value="daily">
+                        <div class="frequency-card">
+                            <div class="frequency-title">Every day</div>
+                            <div class="frequency-desc">Daily check-ins, 1+ times</div>
+                        </div>
+                    </label>
+                    
+                    <label class="frequency-option">
+                        <input type="radio" name="frequency" value="most-days">
+                        <div class="frequency-card">
+                            <div class="frequency-title">Most days (4-5x per week)</div>
+                            <div class="frequency-desc">Regular habit, flexible</div>
+                        </div>
+                    </label>
+                    
+                    <label class="frequency-option">
+                        <input type="radio" name="frequency" value="few-times">
+                        <div class="frequency-card">
+                            <div class="frequency-title">Few times a week (2-3x)</div>
+                            <div class="frequency-desc">Casual, when schedule allows</div>
+                        </div>
+                    </label>
+                    
+                    <label class="frequency-option">
+                        <input type="radio" name="frequency" value="weekly">
+                        <div class="frequency-card">
+                            <div class="frequency-title">Weekly check-ins</div>
+                            <div class="frequency-desc">Once a week accountability</div>
+                        </div>
+                    </label>
+                    
+                    <label class="frequency-option">
+                        <input type="radio" name="frequency" value="casual">
+                        <div class="frequency-card">
+                            <div class="frequency-title">Casual / When I remember</div>
+                            <div class="frequency-desc">No pressure, flexible</div>
+                        </div>
+                    </label>
+                </div>
+            </div>
+        `;
+    }
+
+    getStep4HTML() {
+        return `
+            <div class="onboarding-step-content">
+                <h2>Tell us a bit about yourself</h2>
+                <p class="subtitle optional-note">Optional - Skip anytime</p>
+                
+                <div class="form-section">
+                    <label>Gender:</label>
+                    <div class="radio-group">
+                        <label><input type="radio" name="gender" value="female"> Female</label>
+                        <label><input type="radio" name="gender" value="male"> Male</label>
+                        <label><input type="radio" name="gender" value="non-binary"> Non-binary</label>
+                        <label><input type="radio" name="gender" value="null"> Prefer not to say</label>
+                    </div>
+                </div>
+                
+                <div class="form-section">
+                    <label>Age Range:</label>
+                    <div class="radio-group">
+                        <label><input type="radio" name="age" value="18-25"> 18-25</label>
+                        <label><input type="radio" name="age" value="26-35"> 26-35</label>
+                        <label><input type="radio" name="age" value="36-45"> 36-45</label>
+                        <label><input type="radio" name="age" value="46-55"> 46-55</label>
+                        <label><input type="radio" name="age" value="56+"> 56+</label>
+                        <label><input type="radio" name="age" value="null"> Prefer not to say</label>
+                    </div>
+                </div>
+                
+                <div class="form-helper">
+                    ℹ️ Why we ask: Helps personalize quest names and recommendations.
+                </div>
+            </div>
+        `;
+    }
+
+    getStep5HTML() {
+        return `
+            <div class="onboarding-step-content">
+                <h2>Who's part of your adventure?</h2>
+                
+                <div class="form-section">
+                    <label>Relationship Status:</label>
+                    <div class="radio-group">
+                        <label><input type="radio" name="relationship" value="single"> Single</label>
+                        <label><input type="radio" name="relationship" value="relationship"> In a relationship</label>
+                        <label><input type="radio" name="relationship" value="married"> Married / Partnered</label>
+                        <label><input type="radio" name="relationship" value="complicated"> It's complicated</label>
+                        <label><input type="radio" name="relationship" value="null"> Prefer not to say</label>
+                    </div>
+                </div>
+                
+                <div class="form-group" id="partner-name-group" style="display: none;">
+                    <label for="partner-name">Partner's Name (optional):</label>
+                    <input type="text" id="partner-name" class="form-input" placeholder="Your partner's name...">
+                </div>
+                
+                <div class="form-section">
+                    <label>Do you have children?</label>
+                    <div class="radio-group">
+                        <label><input type="radio" name="has-children" value="yes"> Yes</label>
+                        <label><input type="radio" name="has-children" value="no"> No</label>
+                    </div>
+                </div>
+                
+                <div id="children-details" style="display: none;">
+                    <div class="form-group">
+                        <label>How many? <input type="number" id="num-children" min="1" max="20" style="width: 60px;"></label>
+                    </div>
+                    <div class="form-section">
+                        <label>Ages:</label>
+                        <div class="checkbox-group">
+                            <label><input type="checkbox" value="0-2"> 0-2</label>
+                            <label><input type="checkbox" value="3-5"> 3-5</label>
+                            <label><input type="checkbox" value="6-12"> 6-12</label>
+                            <label><input type="checkbox" value="13-17"> 13-17</label>
+                            <label><input type="checkbox" value="18+"> 18+</label>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-section">
+                    <label>Other caregiving responsibilities:</label>
+                    <div class="checkbox-group">
+                        <label><input type="checkbox" value="parents" class="caregiving-check"> Elderly parents</label>
+                        <label><input type="checkbox" value="family" class="caregiving-check"> Other family members</label>
+                        <label><input type="checkbox" value="pets" class="caregiving-check"> Pets</label>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    getStep6HTML() {
+        return `
+            <div class="onboarding-step-content">
+                <h2>What's your daily life like?</h2>
+                
+                <div class="form-section">
+                    <label>Work Situation:</label>
+                    <div class="radio-group">
+                        <label><input type="radio" name="work" value="full-time"> Working full-time</label>
+                        <label><input type="radio" name="work" value="part-time"> Working part-time</label>
+                        <label><input type="radio" name="work" value="self-employed"> Self-employed / Entrepreneur</label>
+                        <label><input type="radio" name="work" value="student"> Student</label>
+                        <label><input type="radio" name="work" value="stay-at-home"> Stay-at-home parent</label>
+                        <label><input type="radio" name="work" value="retired"> Retired</label>
+                        <label><input type="radio" name="work" value="between-jobs"> Between jobs</label>
+                        <label><input type="radio" name="work" value="other"> Other</label>
+                    </div>
+                </div>
+                
+                <div class="form-section">
+                    <label>Living Situation:</label>
+                    <div class="radio-group">
+                        <label><input type="radio" name="living" value="alone"> Live alone</label>
+                        <label><input type="radio" name="living" value="partner"> With partner</label>
+                        <label><input type="radio" name="living" value="family"> With family</label>
+                        <label><input type="radio" name="living" value="roommates"> With roommates</label>
+                        <label><input type="radio" name="living" value="other"> Other</label>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    getStep7HTML() {
+        const goalNames = {
+            'fitness': '💪 Fitness',
+            'business': '🚀 Business',
+            'creativity': '🎨 Creativity',
+            'relationships': '💕 Relationships',
+            'inner-peace': '🧘 Inner Peace',
+            'home': '🏠 Home',
+            'influence': '📸 Influence',
+            'giving': '🤝 Giving',
+            'cooking': '🍳 Cooking'
+        };
+
+        const selectedGoals = this.onboardingData.primaryGoals
+            .map(g => goalNames[g])
+            .join(', ');
+
+        const freqNames = {
+            'daily': 'Every day',
+            'most-days': 'Most days',
+            'few-times': 'Few times a week',
+            'weekly': 'Weekly',
+            'casual': 'Casual'
+        };
+
+        return `
+            <div class="onboarding-step-content">
+                <h2>Your Adventure Summary</h2>
+                
+                <div class="summary-box">
+                    <div class="summary-item">
+                        <strong>👤 Name:</strong> ${this.onboardingData.name || 'Not set'}
+                    </div>
+                    <div class="summary-item">
+                        <strong>🎯 Goals:</strong> ${selectedGoals || 'None selected'}
+                    </div>
+                    <div class="summary-item">
+                        <strong>📅 Check-ins:</strong> ${freqNames[this.onboardingData.usageFrequency] || 'Not set'}
+                    </div>
+                    ${this.onboardingData.partnerName ? `
+                        <div class="summary-item">
+                            <strong>💍 Partner:</strong> ${this.onboardingData.partnerName}
+                        </div>
+                    ` : ''}
+                    ${this.onboardingData.workSituation ? `
+                        <div class="summary-item">
+                            <strong>🏢 Work:</strong> ${this.onboardingData.workSituation}
+                        </div>
+                    ` : ''}
+                </div>
+                
+                <div class="benefits-box">
+                    <h3>Based on your profile, we'll:</h3>
+                    <ul>
+                        <li>✓ Focus on your ${this.onboardingData.primaryGoals.length} selected path${this.onboardingData.primaryGoals.length !== 1 ? 's' : ''}</li>
+                        <li>✓ Suggest ${this.onboardingData.usageFrequency === 'daily' ? 'daily' : 'weekly'} quests that fit your schedule</li>
+                        <li>✓ Personalize all quest names</li>
+                        <li>✓ Track what matters to you</li>
+                        <li>✓ Recommend the best times for different quests</li>
+                    </ul>
+                </div>
+                
+                <p class="settings-note">You can change this anytime in Settings → Edit Profile</p>
+            </div>
+        `;
+    }
+
+    prefillOnboardingStep(step) {
+        setTimeout(() => {
+            switch (step) {
+                case 1:
+                    const nameInput = document.getElementById('onboarding-name');
+                    if (nameInput && this.onboardingData.name) {
+                        nameInput.value = this.onboardingData.name;
+                    }
+                    if (nameInput) nameInput.focus();
+                    break;
+                    
+                case 2:
+                    this.onboardingData.primaryGoals.forEach(goalId => {
+                        const card = document.querySelector(`.goal-card[data-goal="${goalId}"]`);
+                        if (card) card.classList.add('selected');
+                    });
+                    // Add click handlers
+                    document.querySelectorAll('.goal-card').forEach(card => {
+                        card.addEventListener('click', () => {
+                            const goalId = card.dataset.goal;
+                            if (card.classList.contains('selected')) {
+                                card.classList.remove('selected');
+                                this.onboardingData.primaryGoals = this.onboardingData.primaryGoals.filter(g => g !== goalId);
+                            } else {
+                                if (this.onboardingData.primaryGoals.length < 5) {
+                                    card.classList.add('selected');
+                                    this.onboardingData.primaryGoals.push(goalId);
+                                } else {
+                                    this.showToast('Maximum 5 goals', 'warning');
+                                }
+                            }
+                        });
+                    });
+                    break;
+                    
+                case 3:
+                    if (this.onboardingData.usageFrequency) {
+                        const radio = document.querySelector(`input[name="frequency"][value="${this.onboardingData.usageFrequency}"]`);
+                        if (radio) radio.checked = true;
+                    }
+                    break;
+                    
+                case 5:
+                    // Show partner name field if in relationship
+                    document.querySelectorAll('input[name="relationship"]').forEach(radio => {
+                        radio.addEventListener('change', () => {
+                            const partnerGroup = document.getElementById('partner-name-group');
+                            const val = radio.value;
+                            partnerGroup.style.display = (val === 'relationship' || val === 'married') ? 'block' : 'none';
+                        });
+                    });
+                    
+                    // Show children details if has children
+                    document.querySelectorAll('input[name="has-children"]').forEach(radio => {
+                        radio.addEventListener('change', () => {
+                            const childrenDetails = document.getElementById('children-details');
+                            childrenDetails.style.display = radio.value === 'yes' ? 'block' : 'none';
+                        });
+                    });
+                    break;
+            }
+        }, 50);
+    }
+
+    onboardingNext() {
+        // Validate and collect data from current step
+        if (!this.collectOnboardingStepData()) {
+            return; // Validation failed
+        }
+        
+        if (this.onboardingStep < 7) {
+            this.renderOnboardingStep(this.onboardingStep + 1);
+        } else {
+            this.completeOnboarding();
+        }
+    }
+
+    onboardingBack() {
+        if (this.onboardingStep > 1) {
+            this.renderOnboardingStep(this.onboardingStep - 1);
+        }
+    }
+
+    onboardingSkip() {
+        // Only steps 4, 5, 6 are skippable
+        if (this.onboardingStep >= 4 && this.onboardingStep <= 6) {
+            this.onboardingNext();
+        }
+    }
+
+    collectOnboardingStepData() {
+        switch (this.onboardingStep) {
+            case 1:
+                const name = document.getElementById('onboarding-name')?.value?.trim();
+                if (!name || name.length < 2) {
+                    this.showToast('Please enter your name (at least 2 characters)', 'warning');
+                    return false;
+                }
+                this.onboardingData.name = name;
+                return true;
+                
+            case 2:
+                if (this.onboardingData.primaryGoals.length === 0) {
+                    this.showToast('Please select at least one goal', 'warning');
+                    return false;
+                }
+                return true;
+                
+            case 3:
+                const freq = document.querySelector('input[name="frequency"]:checked')?.value;
+                if (!freq) {
+                    this.showToast('Please select how often you\'ll check in', 'warning');
+                    return false;
+                }
+                this.onboardingData.usageFrequency = freq;
+                return true;
+                
+            case 4:
+                this.onboardingData.gender = document.querySelector('input[name="gender"]:checked')?.value || null;
+                if (this.onboardingData.gender === 'null') this.onboardingData.gender = null;
+                
+                this.onboardingData.ageRange = document.querySelector('input[name="age"]:checked')?.value || null;
+                if (this.onboardingData.ageRange === 'null') this.onboardingData.ageRange = null;
+                return true;
+                
+            case 5:
+                this.onboardingData.relationshipStatus = document.querySelector('input[name="relationship"]:checked')?.value || null;
+                if (this.onboardingData.relationshipStatus === 'null') this.onboardingData.relationshipStatus = null;
+                
+                const partnerName = document.getElementById('partner-name')?.value?.trim();
+                this.onboardingData.partnerName = partnerName || null;
+                
+                const hasChildren = document.querySelector('input[name="has-children"]:checked')?.value === 'yes';
+                this.onboardingData.hasChildren = hasChildren;
+                
+                if (hasChildren) {
+                    this.onboardingData.numberOfChildren = parseInt(document.getElementById('num-children')?.value || 0);
+                    this.onboardingData.childrenAges = Array.from(document.querySelectorAll('#children-details input[type="checkbox"]:checked'))
+                        .map(cb => cb.value);
+                }
+                
+                this.onboardingData.caregivingResponsibilities = Array.from(document.querySelectorAll('.caregiving-check:checked'))
+                    .map(cb => cb.value);
+                return true;
+                
+            case 6:
+                this.onboardingData.workSituation = document.querySelector('input[name="work"]:checked')?.value || null;
+                this.onboardingData.livingSituation = document.querySelector('input[name="living"]:checked')?.value || null;
+                return true;
+                
+            case 7:
+                return true;
+                
+            default:
+                return true;
+        }
+    }
+
+    completeOnboarding() {
+        // Map goals to paths
+        const goalMapping = {
+            'fitness': 'fitness-goddess',
+            'business': 'entrepreneur',
+            'creativity': 'artistic-visionary',
+            'relationships': 'lover-girl',
+            'inner-peace': 'soul-work',
+            'home': 'secret-garden',
+            'influence': 'lifestyle-influencer',
+            'giving': 'living-saint',
+            'cooking': 'culinary-master'
+        };
+        
+        const activePaths = this.onboardingData.primaryGoals.map(g => goalMapping[g]);
+        
+        // Save profile
+        this.data.settings.profile = {
+            ...this.onboardingData,
+            activePaths,
+            onboardingCompleted: true,
+            onboardingDate: new Date().toISOString(),
+            lastWelcomeScreen: null
+        };
+        
+        // Update character name
+        this.data.settings.characterName = this.onboardingData.name;
+        
+        // Update partner name if provided
+        if (this.onboardingData.partnerName) {
+            this.data.settings.partnerName = this.onboardingData.partnerName;
+            this.updatePartnerQuestNames();
+        }
+        
+        // Generate personalized quests
+        const personalizedQuests = this.generatePersonalizedQuests();
+        this.data.quests.push(...personalizedQuests);
+        
+        this.saveData();
+        
+        // Hide onboarding
+        document.getElementById('onboarding-overlay').classList.remove('active');
+        
+        // Initialize the app normally
+        this.checkResets();
+        this.checkLoginStreak();
+        this.checkComebackBonus();
+        this.renderAll();
+        this.updateProgressRings();
+        this.checkSkillDecayWarnings();
+        
+        // Show welcome screen
+        setTimeout(() => this.showWelcomeScreen(), 500);
+    }
+
+    generatePersonalizedQuests() {
+        const quests = [];
+        const profile = this.onboardingData;
+        
+        // Add relationship quests if applicable
+        if (profile.relationshipStatus && profile.relationshipStatus !== 'single' && profile.partnerName) {
+            // Already handled by default quests with partner name
+        }
+        
+        // Add family quests if has children
+        if (profile.hasChildren && profile.numberOfChildren > 0) {
+            quests.push({
+                id: 'family_time',
+                name: 'Quality time with kids',
+                frequency: 'daily',
+                rewards: [{ skill: 'partnership', xp: 30 }],
+                challengeId: null,
+                custom: true,
+                active: true
+            });
+            
+            if (profile.childrenAges.includes('0-2') || profile.childrenAges.includes('3-5')) {
+                quests.push({
+                    id: 'playtime',
+                    name: 'Play with little ones',
+                    frequency: 'daily',
+                    rewards: [{ skill: 'partnership', xp: 25 }],
+                    challengeId: null,
+                    custom: true,
+                    active: true
+                });
+            }
+            
+            if (profile.childrenAges.includes('6-12') || profile.childrenAges.includes('13-17')) {
+                quests.push({
+                    id: 'homework_help',
+                    name: 'Help with homework/school',
+                    frequency: 'as-needed',
+                    rewards: [{ skill: 'partnership', xp: 20 }],
+                    challengeId: null,
+                    custom: true,
+                    active: true
+                });
+            }
+        }
+        
+        // Add caregiving quests
+        if (profile.caregivingResponsibilities.includes('parents')) {
+            quests.push({
+                id: 'check_on_parents',
+                name: 'Check in with parents',
+                frequency: 'weekly',
+                rewards: [{ skill: 'generosity', xp: 30 }],
+                challengeId: null,
+                custom: true,
+                active: true
+            });
+        }
+        
+        if (profile.caregivingResponsibilities.includes('pets')) {
+            quests.push({
+                id: 'pet_care',
+                name: 'Pet care & bonding time',
+                frequency: 'daily',
+                rewards: [{ skill: 'homeCraft', xp: 15 }],
+                challengeId: null,
+                custom: true,
+                active: true
+            });
+        }
+        
+        // Add work-specific quests
+        if (profile.workSituation === 'self-employed') {
+            quests.push({
+                id: 'business_metrics',
+                name: 'Review business metrics',
+                frequency: 'weekly',
+                rewards: [{ skill: 'business', xp: 50 }],
+                challengeId: null,
+                custom: true,
+                active: true
+            });
+        }
+        
+        if (profile.workSituation === 'student') {
+            quests.push({
+                id: 'study_session',
+                name: 'Focused study session',
+                frequency: 'daily',
+                rewards: [{ skill: 'business', xp: 40 }],
+                challengeId: null,
+                custom: true,
+                active: true
+            });
+        }
+        
+        return quests;
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // WELCOME SCREEN SYSTEM
+    // ═══════════════════════════════════════════════════════════════
+
+    shouldShowWelcome() {
+        const profile = this.data.settings.profile;
+        if (!profile || !profile.onboardingCompleted) return false;
+        
+        const lastShown = profile.lastWelcomeScreen;
+        if (!lastShown) return true;
+        
+        const hoursSince = (new Date() - new Date(lastShown)) / (1000 * 60 * 60);
+        return hoursSince >= 4;
+    }
+
+    showWelcomeScreen() {
+        const modal = document.getElementById('welcome-screen-modal');
+        if (!modal) return;
+        
+        const { greeting, emoji } = this.getGreeting();
+        const stats = this.getWelcomeStats();
+        const recommendations = this.getRecommendedQuests();
+        
+        // Update greeting
+        document.getElementById('welcome-greeting').textContent = `${greeting} ${emoji}`;
+        
+        // Update stats
+        const statsHtml = `
+            <div class="stat-item">🔥 ${stats.streak} day streak</div>
+            <div class="stat-item">⭐ Level ${stats.level}</div>
+            <div class="stat-item">🎯 ${stats.todayXP} XP today</div>
+        `;
+        document.getElementById('welcome-stats').innerHTML = statsHtml;
+        
+        // Update recommendations
+        document.getElementById('welcome-quick-wins').innerHTML = this.renderWelcomeQuests(recommendations.quickWins, 'Quick Wins (5-10 min)');
+        document.getElementById('welcome-focus-tasks').innerHTML = this.renderWelcomeQuests(recommendations.focusTasks, 'Your Focus Today');
+        if (recommendations.challenges.length > 0) {
+            document.getElementById('welcome-challenges').innerHTML = this.renderWelcomeQuests(recommendations.challenges, 'Active Challenges');
+        } else {
+            document.getElementById('welcome-challenges').innerHTML = '';
+        }
+        
+        // Update last welcome timestamp
+        this.data.settings.profile.lastWelcomeScreen = new Date().toISOString();
+        this.saveData();
+        
+        // Show modal
+        modal.classList.add('active');
+        document.body.classList.add('modal-open');
+    }
+
+    getGreeting() {
+        const hour = new Date().getHours();
+        const name = this.data.settings.profile?.name || this.data.settings.characterName || 'Adventurer';
+        
+        if (hour < 12) return { greeting: `Good Morning, ${name}!`, emoji: '☀️' };
+        if (hour < 17) return { greeting: `Good Afternoon, ${name}!`, emoji: '🌤️' };
+        if (hour < 22) return { greeting: `Good Evening, ${name}!`, emoji: '🌙' };
+        return { greeting: `Still up, ${name}?`, emoji: '🌃' };
+    }
+
+    getWelcomeStats() {
+        return {
+            streak: this.data.loginStreak?.current || 0,
+            level: this.getTotalLevel(),
+            todayXP: this.getTodayXP(),
+            challenges: this.data.challenges.filter(c => c.active).length
+        };
+    }
+
+    getRecommendedQuests() {
+        const hour = new Date().getHours();
+        
+        return {
+            quickWins: this.getQuickWinQuests(),
+            focusTasks: hour < 12 ? this.getMorningQuests() : 
+                       hour < 17 ? this.getAfternoonQuests() : 
+                       this.getEveningQuests(),
+            challenges: this.getActiveChallengeQuests()
+        };
+    }
+
+    getQuickWinQuests() {
+        return this.data.quests
+            .filter(q => !this.canCompleteQuest(q) === false && q.frequency === 'daily')
+            .sort((a, b) => this.getQuestXP(a) - this.getQuestXP(b))
+            .slice(0, 3);
+    }
+
+    getMorningQuests() {
+        const morningTags = ['workout', 'meditation', 'journaling', 'planning'];
+        return this.data.quests
+            .filter(q => !this.canCompleteQuest(q) === false)
+            .slice(0, 3);
+    }
+
+    getAfternoonQuests() {
+        return this.data.quests
+            .filter(q => !this.canCompleteQuest(q) === false)
+            .slice(0, 3);
+    }
+
+    getEveningQuests() {
+        return this.data.quests
+            .filter(q => !this.canCompleteQuest(q) === false)
+            .slice(0, 3);
+    }
+
+    getActiveChallengeQuests() {
+        const challenges = this.data.challenges.filter(c => c.active);
+        const quests = [];
+        
+        challenges.forEach(challenge => {
+            const remaining = challenge.questIds.filter(qId => 
+                !challenge.currentPeriod.completedQuests.some(cq => cq.questId === qId)
+            );
+            remaining.forEach(qId => {
+                const quest = this.data.quests.find(q => q.id === qId);
+                if (quest) quests.push(quest);
+            });
+        });
+        
+        return quests.slice(0, 3);
+    }
+
+    getQuestXP(quest) {
+        return quest.rewards?.reduce((sum, r) => sum + r.xp, 0) || 0;
+    }
+
+    renderWelcomeQuests(quests, title) {
+        if (quests.length === 0) return '';
+        
+        return `
+            <h3>${title}</h3>
+            <div class="welcome-quest-list">
+                ${quests.map(q => `
+                    <div class="welcome-quest-item" onclick="app.startQuestFromWelcome('${q.id}')">
+                        <span class="quest-name">• ${q.name}</span>
+                        <span class="quest-xp">${this.getQuestXP(q)} XP</span>
+                    </div>
+                `).join('')}
+            </div>
+        `;
+    }
+
+    startQuestFromWelcome(questId) {
+        this.closeWelcomeScreen();
+        this.switchView('quests');
+        setTimeout(() => this.navigateToQuest(questId), 300);
+    }
+
+    closeWelcomeScreen() {
+        document.getElementById('welcome-screen-modal')?.classList.remove('active');
+        document.body.classList.remove('modal-open');
+    }
+
+    getTodayXP() {
+        const today = new Date().toDateString();
+        return this.data.completionLog.completions
+            .filter(c => new Date(c.timestamp).toDateString() === today)
+            .reduce((sum, c) => sum + c.xpAwarded.reduce((s, r) => s + r.xp, 0), 0);
     }
 }
 
