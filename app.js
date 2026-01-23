@@ -10,6 +10,7 @@ class LifeRPG {
     init() {
         this.currentTypeFilter = 'all';
         this.currentPathFilter = 'all';
+        this.currentStatusFilter = 'upcoming';
         this.loadData();
         this.initSoundSystem();
         this.setupEventListeners();
@@ -352,6 +353,12 @@ class LifeRPG {
         return {
             version: this.version,
             
+            settings: {
+                characterName: 'Christina',
+                partnerName: 'Your Partner',
+                soundEnabled: true
+            },
+            
             skills: {
                 athleticism: { xp: 0, currentStreak: 0, longestStreak: 0, lastAwardedDate: null },
                 culinary: { xp: 0, currentStreak: 0, longestStreak: 0, lastAwardedDate: null },
@@ -413,7 +420,7 @@ class LifeRPG {
             { id: 'email_inbox', name: 'Process email inbox to zero', frequency: 'daily', rewards: [{ skill: 'business', xp: 15 }], challengeId: null, custom: false, active: true },
             
             // Partnership
-            { id: 'quality_time', name: 'Quality time with Scott', frequency: 'daily', rewards: [{ skill: 'partnership', xp: 40 }], challengeId: null, custom: false, active: true },
+            { id: 'quality_time', name: 'Quality time with Your Partner', frequency: 'daily', rewards: [{ skill: 'partnership', xp: 40 }], challengeId: null, custom: false, active: true },
             { id: 'check_in', name: 'Meaningful check-in conversation', frequency: 'daily', rewards: [{ skill: 'partnership', xp: 25 }], challengeId: null, custom: false, active: true },
             
             // Friendships
@@ -446,7 +453,7 @@ class LifeRPG {
             { id: 'fancy_dinner', name: 'Cook a fancy dinner', frequency: 'weekly', rewards: [{ skill: 'culinary', xp: 60 }], challengeId: null, custom: false, active: true },
             
             // Partnership
-            { id: 'date_night', name: 'Date night with Scott', frequency: 'weekly', rewards: [{ skill: 'partnership', xp: 75 }], challengeId: null, custom: false, active: true },
+            { id: 'date_night', name: 'Date night with Your Partner', frequency: 'weekly', rewards: [{ skill: 'partnership', xp: 75 }], challengeId: null, custom: false, active: true },
             
             // Friendships
             { id: 'social', name: 'Hang with friends', frequency: 'weekly', rewards: [{ skill: 'friendships', xp: 60 }], challengeId: null, custom: false, active: true },
@@ -490,7 +497,7 @@ class LifeRPG {
             { id: 'biz_revenue', name: 'Generate business revenue', frequency: 'monthly', rewards: [{ skill: 'business', xp: 200 }], challengeId: null, custom: false, active: true },
             
             // Partnership
-            { id: 'love_surprise', name: 'Surprise Scott with something thoughtful', frequency: 'monthly', rewards: [{ skill: 'partnership', xp: 75 }], challengeId: null, custom: false, active: true },
+            { id: 'love_surprise', name: 'Surprise Your Partner with something thoughtful', frequency: 'monthly', rewards: [{ skill: 'partnership', xp: 75 }], challengeId: null, custom: false, active: true },
             { id: 'love_adventure', name: 'Try something new together', frequency: 'monthly', rewards: [{ skill: 'partnership', xp: 50 }, { skill: 'friendships', xp: 25 }], challengeId: null, custom: false, active: true },
             { id: 'love_letter', name: 'Write a love letter', frequency: 'monthly', rewards: [{ skill: 'partnership', xp: 60 }], challengeId: null, custom: false, active: true },
             
@@ -1368,7 +1375,7 @@ class LifeRPG {
                 interval: { value: 1, unit: 'months' },
                 existingQuestIds: ['date_night'],
                 quests: [
-                    { id: 'love_surprise', name: 'Surprise Scott with something thoughtful', frequency: 'monthly', rewards: [{ skill: 'partnership', xp: 75 }] },
+                    { id: 'love_surprise', name: 'Surprise Your Partner with something thoughtful', frequency: 'monthly', rewards: [{ skill: 'partnership', xp: 75 }] },
                     { id: 'love_adventure', name: 'Try something new together', frequency: 'monthly', rewards: [{ skill: 'partnership', xp: 50 }, { skill: 'friendships', xp: 25 }] }
                 ]
             },
@@ -1647,6 +1654,20 @@ class LifeRPG {
 
             this.data.version = 3;
             console.log('v2 to v3 migration complete!');
+        }
+
+        // Ensure settings object exists (for all versions)
+        if (!this.data.settings) {
+            this.data.settings = {
+                characterName: 'Christina',
+                partnerName: 'Your Partner',
+                soundEnabled: true
+            };
+        }
+
+        // Apply partner name to quests if it's been customized
+        if (this.data.settings.partnerName && this.data.settings.partnerName !== 'Your Partner') {
+            this.updatePartnerQuestNames();
         }
 
         // Always rebuild completion caches after loading
@@ -2800,6 +2821,103 @@ class LifeRPG {
         if (soundToggle) {
             soundToggle.checked = this.soundEnabled;
         }
+
+        // Update character name input
+        const characterNameInput = document.getElementById('character-name-input');
+        if (characterNameInput && this.data.settings) {
+            characterNameInput.value = this.data.settings.characterName || 'Christina';
+        }
+
+        // Update partner name input
+        const partnerNameInput = document.getElementById('partner-name-input');
+        if (partnerNameInput && this.data.settings) {
+            partnerNameInput.value = this.data.settings.partnerName || 'Your Partner';
+        }
+
+        // Update character title
+        this.updateCharacterTitle();
+    }
+
+    updateCharacterTitle() {
+        const titleEl = document.getElementById('character-title');
+        if (titleEl && this.data.settings) {
+            const characterName = this.data.settings.characterName || 'Christina';
+            titleEl.textContent = `${characterName}'s Adventure`;
+        }
+    }
+
+    updateCharacterName(name) {
+        if (!this.data.settings) {
+            this.data.settings = {
+                characterName: 'Christina',
+                partnerName: 'Your Partner',
+                soundEnabled: true
+            };
+        }
+        this.data.settings.characterName = name || 'Christina';
+        this.saveData();
+        this.updateCharacterTitle();
+    }
+
+    updatePartnerName(name) {
+        if (!this.data.settings) {
+            this.data.settings = {
+                characterName: 'Christina',
+                partnerName: 'Your Partner',
+                soundEnabled: true
+            };
+        }
+        this.data.settings.partnerName = name || 'Your Partner';
+        this.saveData();
+        // Update all quest names that reference the partner
+        this.updatePartnerQuestNames();
+        this.renderQuests();
+        this.renderChallenges();
+    }
+
+    updatePartnerQuestNames() {
+        const partnerName = this.data.settings?.partnerName || 'Your Partner';
+        
+        // Update partner-related quests
+        const partnerQuestUpdates = {
+            'quality_time': `Quality time with ${partnerName}`,
+            'date_night': `Date night with ${partnerName}`,
+            'love_surprise': `Surprise ${partnerName} with something thoughtful`
+        };
+
+        this.data.quests.forEach(quest => {
+            if (partnerQuestUpdates[quest.id]) {
+                quest.name = partnerQuestUpdates[quest.id];
+            }
+        });
+    }
+
+    renderSettings() {
+        // Update login streak display
+        if (this.data.loginStreak) {
+            const streakEl = document.getElementById('settings-login-streak');
+            const loginsEl = document.getElementById('settings-total-logins');
+            if (streakEl) streakEl.textContent = this.data.loginStreak.current + ' days';
+            if (loginsEl) loginsEl.textContent = this.data.loginStreak.totalLogins || 0;
+        }
+
+        // Update total quests
+        const questsEl = document.getElementById('settings-total-quests');
+        if (questsEl) {
+            questsEl.textContent = this.data.completionLog?.completions?.length || 0;
+        }
+
+        // Update badges count
+        const badgesEl = document.getElementById('settings-total-badges');
+        if (badgesEl) {
+            badgesEl.textContent = this.data.earnedBadges?.length || 0;
+        }
+
+        // Update sound toggle
+        const soundToggle = document.getElementById('sound-toggle');
+        if (soundToggle) {
+            soundToggle.checked = this.soundEnabled;
+        }
     }
 
     renderCharacterSheet() {
@@ -2930,10 +3048,16 @@ class LifeRPG {
     applyQuestFilters() {
         const typeFilter = this.currentTypeFilter || 'all';
         const pathFilter = this.currentPathFilter || 'all';
+        const statusFilter = this.currentStatusFilter || 'upcoming';
+
+        const today = new Date().toDateString();
+        const now = new Date();
+        const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
 
         document.querySelectorAll('.quest-card').forEach(card => {
             const frequency = card.dataset.frequency;
             const questId = card.dataset.questId;
+            const quest = this.data.quests.find(q => q.id === questId);
 
             // Type filter
             const typeMatch = typeFilter === 'all' || frequency === typeFilter;
@@ -2949,8 +3073,42 @@ class LifeRPG {
                 }
             }
 
-            card.style.display = (typeMatch && pathMatch) ? 'block' : 'none';
+            // Status filter
+            let statusMatch = true;
+            if (statusFilter !== 'all') {
+                const isCompleted = !this.canCompleteQuest(quest);
+                
+                if (statusFilter === 'upcoming') {
+                    // Show only incomplete quests
+                    statusMatch = !isCompleted;
+                } else if (statusFilter === 'recently-completed') {
+                    // Show quests completed in the last 7 days
+                    if (!isCompleted) {
+                        statusMatch = false;
+                    } else {
+                        // Check if quest was completed recently
+                        const recentCompletions = this.data.completionLog.completions.filter(c => {
+                            const completionDate = new Date(c.timestamp);
+                            return c.questId === questId && completionDate >= weekAgo;
+                        });
+                        statusMatch = recentCompletions.length > 0;
+                    }
+                } else if (statusFilter === 'completed') {
+                    // Show only completed quests
+                    statusMatch = isCompleted;
+                }
+            }
+
+            card.style.display = (typeMatch && pathMatch && statusMatch) ? 'block' : 'none';
         });
+    }
+
+    filterQuestsByStatus(status) {
+        this.currentStatusFilter = status;
+        document.querySelectorAll('[data-filter-status]').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.filterStatus === status);
+        });
+        this.applyQuestFilters();
     }
 
     filterQuestsByType(type) {
@@ -3007,7 +3165,9 @@ class LifeRPG {
             const questsHtml = stage.questIds.map(qId => {
                 const quest = this.data.quests.find(q => q.id === qId);
                 const satisfied = stage.satisfiedQuests.includes(qId);
-                return `<span class="stage-quest ${satisfied ? 'satisfied' : ''}">${satisfied ? '✓' : '○'} ${quest?.name || qId}</span>`;
+                return `<span class="stage-quest ${satisfied ? 'satisfied' : ''}" data-quest-id="${qId}" onclick="app.navigateToQuest('${qId}')">
+                    ${satisfied ? '✓' : '○'} ${quest?.name || qId}
+                </span>`;
             }).join('');
 
             return `
@@ -4142,6 +4302,13 @@ class LifeRPG {
             });
         });
 
+        // Status filters
+        document.querySelectorAll('[data-filter-status]').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                this.filterQuestsByStatus(e.currentTarget.dataset.filterStatus);
+            });
+        });
+
         // Add quest form
         const addQuestForm = document.getElementById('add-quest-form');
         if (addQuestForm) {
@@ -4407,6 +4574,49 @@ class LifeRPG {
         if (targetView) {
             targetView.classList.add('active');
         }
+    }
+
+    navigateToQuest(questId) {
+        // Switch to quests view
+        this.switchView('quests');
+        
+        // Wait a moment for view to render
+        setTimeout(() => {
+            // Find the quest card
+            const questCard = document.querySelector(`.quest-card[data-quest-id="${questId}"]`);
+            
+            if (questCard) {
+                // Reset all filters to show all quests
+                this.currentStatusFilter = 'all';
+                this.currentTypeFilter = 'all';
+                this.currentPathFilter = 'all';
+                
+                // Update filter buttons
+                document.querySelectorAll('[data-filter-status]').forEach(btn => {
+                    btn.classList.toggle('active', btn.dataset.filterStatus === 'all');
+                });
+                document.querySelectorAll('[data-filter-type]').forEach(btn => {
+                    btn.classList.toggle('active', btn.dataset.filterType === 'all');
+                });
+                document.querySelectorAll('[data-filter-path]').forEach(btn => {
+                    btn.classList.toggle('active', btn.dataset.filterPath === 'all');
+                });
+                
+                // Reapply filters to show the quest
+                this.applyQuestFilters();
+                
+                // Highlight the quest card
+                questCard.classList.add('quest-highlight');
+                
+                // Scroll to the quest card
+                questCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                
+                // Remove highlight after 3 seconds
+                setTimeout(() => {
+                    questCard.classList.remove('quest-highlight');
+                }, 3000);
+            }
+        }, 100);
     }
 
     // ═══════════════════════════════════════════════════════════════

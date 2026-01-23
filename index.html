@@ -42,7 +42,7 @@
         <!-- Character Sheet View -->
         <div id="character-view" class="view active">
             <div class="character-header">
-                <h1>Christina's Adventure</h1>
+                <h1 id="character-title">Christina's Adventure</h1>
                 <div class="header-stats">
                     <div class="header-stat">
                         <span class="stat-value" id="total-level">10</span>
@@ -248,6 +248,16 @@
             </div>
 
             <div class="filter-section">
+                <h3 class="filter-label">Status:</h3>
+                <div class="filter-buttons">
+                    <button class="filter-btn active" data-filter-status="upcoming">Upcoming</button>
+                    <button class="filter-btn" data-filter-status="recently-completed">Recently Completed</button>
+                    <button class="filter-btn" data-filter-status="completed">All Completed</button>
+                    <button class="filter-btn" data-filter-status="all">All</button>
+                </div>
+            </div>
+
+            <div class="filter-section">
                 <h3 class="filter-label">Type:</h3>
                 <div class="filter-buttons">
                     <button class="filter-btn active" data-filter-type="all">All</button>
@@ -368,6 +378,19 @@
                         <span class="toggle-slider"></span>
                         Enable Sounds
                     </label>
+                </div>
+            </div>
+
+            <div class="settings-section">
+                <h3>👤 Personalization</h3>
+                <div class="form-group">
+                    <label for="character-name-input">Character Name:</label>
+                    <input type="text" id="character-name-input" class="form-input" placeholder="Enter your name" onchange="app.updateCharacterName(this.value)">
+                </div>
+                <div class="form-group">
+                    <label for="partner-name-input">Partner Name (optional):</label>
+                    <input type="text" id="partner-name-input" class="form-input" placeholder="Enter partner name" onchange="app.updatePartnerName(this.value)">
+                    <p class="form-helper-text">This will update "Your Partner" in quests</p>
                 </div>
             </div>
 
